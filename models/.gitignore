@@ -1,0 +1,4 @@
+*.json
+*.txt
+*.safetensors
+!requirements.txt

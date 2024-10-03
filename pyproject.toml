@@ -1,0 +1,40 @@
+[project]
+name = "whisper"
+version = "0.1.0"
+description = "Testing ground for whisper on sagemaker"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "faster-whisper>=1.0.3",
+    "sagemaker[local]>=2.232.1",
+    "torch >= 2.1.0",
+    "torchaudio >=2.1.0",
+    "torchvision >= 0.16.0",
+    "transformers>=4.37.0",
+    "typed-ffmpeg>=2.0.0",
+]
+
+# To install pytorch (https://github.com/astral-sh/uv/issues/7202#issuecomment-2345061375):
+# First remove all other dependencies
+# uv pip install torch --index-url https://download.pytorch.org/whl/cu124
+# uv add torch torchvision torchaudio
+
+[tool.uv]
+dev-dependencies = [
+    "pre-commit>=3.8.0",
+    "ipykernel>=6.29.5",
+    "pyright>=1.1.382.post0",
+    "ruff>=0.6.8",
+]
+
+[tool.uv.sources]
+faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper.git" }
+
+[tool.pyright]
+# pre-commit: make pyright use the venv
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+# https://docs.pytest.org/en/latest/explanation/goodpractices.html#which-import-mode
+addopts = ["--import-mode=importlib"]

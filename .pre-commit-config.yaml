@@ -4,7 +4,7 @@
 # Manually run with `pre-commit run --all-files`
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -13,7 +13,7 @@ repos:
       - id: check-added-large-files
       - id: check-case-conflict
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.8
+    rev: v0.6.9
     hooks:
       - id: ruff
         args: [--fix]
@@ -25,8 +25,8 @@ repos:
         description: Scan the latest commit for any secrets
         entry: bash -c 'trufflehog git file://. --since-commit HEAD --only-verified --fail --no-update'
         language: system
-        stages: ["commit", "push"]
+        stages: ["pre-commit", "pre-push"]
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.382.post1
+    rev: v1.1.383
     hooks:
       - id: pyright

@@ -35,7 +35,7 @@ def bench(model: Model, test_file: AudioFilename, batch_size: int | None = 24) -
         chunk_length_s=30,
         batch_size=batch_size,
         return_timestamps=True,
-        generate_kwargs={"language": "english"},
+        generate_kwargs={"language": "english", "task": "translate"},
     )
     transcribe_time = time.time() - now
     speed = audio_duration / transcribe_time

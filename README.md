@@ -19,6 +19,7 @@ Using [audio file][1hour.flac] of length 1:13:10 (4390s) for all tests.
 
 Notes:
 
+- The best performing model for noisy/multilingual environments is `openai/whisper-large-v2`.
 - SDPA is only available in Pytorch 2.1.1 and above. In order to use it in the SageMaker images, the PyTorch version is overridden via `requirements.txt`. Tested in Sagemaker Local Mode.
 - faster-whisper doesn't really provide significant speedups. Consider investigating whether total memory usage is lower, however.
 

@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Literal
 
+import ffmpeg
+
 _TEST_AUDIO_DIR = Path("test_audio")
 
 AudioFilename = Literal[
@@ -18,3 +20,8 @@ def get_test_audio(name: AudioFilename) -> Path:
     """Return path of a test audio file."""
 
     return _TEST_AUDIO_DIR / name
+
+
+def get_duration(filename: str | Path) -> float:
+    """Get duration in seconds of an audio file."""
+    return float(ffmpeg.probe(filename=filename)["streams"][0]["duration"])

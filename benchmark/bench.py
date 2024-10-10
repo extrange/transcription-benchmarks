@@ -2,12 +2,11 @@ import logging
 import time
 from pathlib import Path
 
-import ffmpeg
 import torch
 from transformers import pipeline
 
 from benchmark.types import BenchArgs, BenchResult, Segment
-from misc.get_test_audio import get_test_audio
+from misc.get_test_audio import get_duration, get_test_audio
 from misc.models import Model
 from misc.setup_logging import setup_logging
 from util.download import download_hf_model, get_model_dir
@@ -28,8 +27,18 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
 
     audio_file = get_test_audio(args.test_file)
     audio_duration = get_duration(audio_file)
-    _logger.info("Input file duration: %ss", f"{audio_duration:.1f}")
 
+    return _run_bench(model, model_dir, args, audio_file, audio_duration)
+
+
+def _run_bench(
+    model: Model,
+    model_dir: Path,
+    args: BenchArgs,
+    audio_file: Path,
+    audio_duration: float,
+) -> BenchResult:
+    _logger.info("Loading model...")
     pipe = pipeline(
         "automatic-speech-recognition",
         model=str(model_dir),
@@ -67,8 +76,3 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
         gpu_mem_bytes=memory_peak,
         audio_duration_s=audio_duration,
     )
-
-
-def get_duration(filename: str | Path) -> float:
-    """Get duration in seconds of an audio file."""
-    return float(ffmpeg.probe(filename=filename)["streams"][0]["duration"])

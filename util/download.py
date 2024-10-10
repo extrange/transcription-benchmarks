@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from transformers import pipeline
 
-from misc.models import MODEL_DIR, Model
+from app_types.models import MODEL_DIR, Model
 from misc.setup_logging import setup_logging
 
 setup_logging()

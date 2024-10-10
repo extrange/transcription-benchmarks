@@ -7,9 +7,12 @@ from misc.get_test_audio import AudioFilename
 
 
 class FasterWhisperArgs(BaseModel):
-    """Arguments as per the non-batched `WhisperModel.transcribe`."""
+    """
+    Arguments as per the non-batched `WhisperModel.transcribe`.
 
-    audio: str  # Modified to just allow str
+    `audio` is removed as it is supplied by BenchArgs.
+    """
+
     language: str | None = None
     task: str = "transcribe"
     beam_size: int = 5
@@ -73,7 +76,7 @@ class BenchArgs(BaseModel):
     """
     Dict of parameters passed to the pipeline's [model_kwargs](https://huggingface.co/docs/transformers/en/main_classes/pipelines#transformers.pipeline.model_kwargs).
     """
-    generate_kwargs: dict = {}
+    hf_generate_kwargs: dict = {}
     """
     Dict of parameters passed to [WhisperForConditionalGeneration.generate](https://huggingface.co/docs/transformers/v4.45.2/en/model_doc/whisper#transformers.WhisperForConditionalGeneration.generate)
     """

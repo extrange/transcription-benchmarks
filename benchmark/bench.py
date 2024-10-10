@@ -1,12 +1,13 @@
 import logging
 import time
 from pathlib import Path
+from typing import get_args
 
 import torch
 from transformers import pipeline
 
 from app_types.bench import BenchArgs, BenchResult, Segment
-from app_types.models import Model
+from app_types.models import FasterWhisperModel, Model, PytorchModel
 from misc.get_test_audio import get_duration, get_test_audio
 from misc.setup_logging import setup_logging
 from util.download import download_hf_model, get_model_dir
@@ -19,6 +20,16 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
     """Run a model on a test file and return the BenchResult."""
     if args is None:
         args = BenchArgs()
+
+    if model in get_args(FasterWhisperModel) and (
+        args.hf_generate_kwargs or args.hf_model_kwargs
+    ):
+        msg = f"You have supplied a faster-whisper {model=} but also specified PyTorch model specific arguments: {args.hf_generate_kwargs=} {args.hf_model_kwargs}"
+        raise ValueError(msg)
+
+    if model in get_args(PytorchModel) and args.fw_args:
+        msg = f"You have supplied a PyTorch {model=} but also specified faster-whisper specific arguments: {args.fw_args=}"
+        raise ValueError(msg)
 
     model_dir = get_model_dir(model)
     if not model_dir.exists():
@@ -54,7 +65,7 @@ def _run_transformers(
         chunk_length_s=args.chunk_length_s,
         batch_size=args.batch_size,
         return_timestamps=True,
-        generate_kwargs=args.generate_kwargs,
+        generate_kwargs=args.hf_generate_kwargs,
     )
     transcribe_time = time.time() - now
     memory_peak = torch.cuda.max_memory_allocated()

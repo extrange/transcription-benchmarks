@@ -1,4 +1,6 @@
-from app_types.bench import BenchArgs
+import pytest
+
+from app_types.bench import BenchArgs, FasterWhisperArgs
 from benchmark.bench import bench
 
 
@@ -19,3 +21,22 @@ def test_openai_whisper_large_v3_turbo() -> None:
         res.get_text()
         == "[0.00s -> 4.62s]  Ladies and gentlemen, thank you for being here and for your written representations.\n[5.54s -> 9.10s]  You know what the purpose of this select committee is.\n[10.22s -> 18.08s]  We are exploring the risks, the ways in which deliberate online falsehoods are spread,\n[18.76s -> 24.88s]  and we are primarily restricting ourselves to deliberate online falsehoods.\n[24.88s -> 26.70s]  We call them DOFs.\n[26.70s -> 29.10s]  And what we should do about this situation.\n[30.20s -> 35.80s]  So I think it's useful to be clear about the approach we are going to take in these discussions.\n[36.70s -> 42.70s]  We see you, the entire panel, as people who enable communications,\n[42.70s -> 55.00s]  and technology enables communications. it has brought immense benefits, it has revolutionized societies, it has given more freedom to people, and at the same time there are some issues.\n[55.00s -> 60.00s]  And we see you as partners in trying to deal with those issues."
     )
+
+
+def test_raise_on_fw_model_with_pytorch_args() -> None:
+    with pytest.raises(
+        ValueError,
+        match="You have supplied a faster-whisper model='deepdml/faster-whisper-large-v3-turbo-ct2' but also specified PyTorch model specific arguments: args.hf_generate_kwargs={} {'attn_implementation': 'sdpa'}",
+    ):
+        bench(
+            "deepdml/faster-whisper-large-v3-turbo-ct2",
+            BenchArgs(hf_model_kwargs={"attn_implementation": "sdpa"}),
+        )
+
+
+def test_raise_on_pytorch_model_with_fw_args() -> None:
+    with pytest.raises(
+        ValueError,
+        match="You have supplied a PyTorch model='openai/whisper-large-v2' but also specified faster-whisper specific arguments:",
+    ):
+        bench("openai/whisper-large-v2", BenchArgs(fw_args=FasterWhisperArgs()))

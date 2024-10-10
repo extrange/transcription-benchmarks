@@ -1,80 +1,72 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, Literal
 
 import ffmpeg
 import torch
 from transformers import pipeline
 
-from misc.get_test_audio import AudioFilename, get_test_audio
+from benchmark.types import BenchArgs, BenchResult, Segment
+from misc.get_test_audio import get_test_audio
 from misc.models import Model
 from misc.setup_logging import setup_logging
+from util.download import download_hf_model, get_model_dir
 
 setup_logging()
 _logger = logging.getLogger(__name__)
 
 
-def bench(
-    model: Model,
-    test_file: AudioFilename,
-    batch_size: int | None = 24,
-    chunk_length_s: int | None = 30,
-    **kwargs: Any,
-) -> float:
-    """
-    Run model on a file and return the transcribe time.
+def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
+    """Run a model on a test file and return the BenchResult."""
+    if args is None:
+        args = BenchArgs()
 
-    kwargs: Parameters for [WhisperForConditionalGeneration.generate](https://huggingface.co/docs/transformers/v4.45.2/en/model_doc/whisper#transformers.WhisperForConditionalGeneration.generate)
+    model_dir = get_model_dir(model)
+    if not model_dir.exists():
+        _logger.info("Could not find model in %s, downloading", model_dir)
+        download_hf_model(model)
 
-    """
-    audio_file = get_test_audio(test_file)
+    audio_file = get_test_audio(args.test_file)
     audio_duration = get_duration(audio_file)
     _logger.info("Input file duration: %ss", f"{audio_duration:.1f}")
 
     pipe = pipeline(
         "automatic-speech-recognition",
-        model=model,
+        model=str(model_dir),
         torch_dtype=torch.float16,
         device="cuda:0",
-        model_kwargs={"attn_implementation": "sdpa"},
+        model_kwargs=args.hf_model_kwargs,
     )
 
     _logger.info("Starting benchmark...")
     now = time.time()
     res = pipe(
         str(audio_file),
-        chunk_length_s=chunk_length_s,
-        batch_size=batch_size,
+        chunk_length_s=args.chunk_length_s,
+        batch_size=args.batch_size,
         return_timestamps=True,
-        generate_kwargs=kwargs,
+        generate_kwargs=args.generate_kwargs,
     )
     transcribe_time = time.time() - now
-    speed = audio_duration / transcribe_time
     memory_peak = torch.cuda.max_memory_allocated()
-    if type(res) is dict:
-        for chunk in res["chunks"]:
-            _logger.info(
-                "[%.2fs -> %.2fs] %s",
-                chunk["timestamp"][0],
-                chunk["timestamp"][1],
-                chunk["text"],
-            )
-    _logger.info(
-        "Took %s (%sx) for model %s for file %s, peak memory %s",
-        f"{transcribe_time:.1f}s",
-        f"{speed:.1f}",
-        model,
-        test_file,
-        f"{memory_peak/1_000_000:.1f}MB",
+
+    if type(res) is not dict:
+        msg = f"{type(res)=} is not dict!"
+        raise ValueError(msg)
+
+    segments = [
+        Segment(text=c["text"], start=c["timestamp"][0], end=c["timestamp"][1])
+        for c in res["chunks"]
+    ]
+
+    return BenchResult(
+        model=model,
+        text=segments,
+        params=args,
+        time_taken_s=transcribe_time,
+        gpu_mem_bytes=memory_peak,
+        audio_duration_s=audio_duration,
     )
-    _logger.info(
-        "Parameters: batch_size=%s, chunk_length_s=%s, generate_kwargs=%s",
-        batch_size,
-        chunk_length_s,
-        kwargs,
-    )
-    return transcribe_time
 
 
 def get_duration(filename: str | Path) -> float:

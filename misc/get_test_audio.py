@@ -3,7 +3,15 @@ from typing import Literal
 
 _TEST_AUDIO_DIR = Path("test_audio")
 
-AudioFilename = Literal["1min.flac", "10min.flac", "1hour.flac"]
+AudioFilename = Literal[
+    "1min.flac",
+    "10min.flac",
+    "1hour.flac",
+    "chinese.flac",
+    "noisy.flac",
+    "long.flac",
+    "mixed.m4a",
+]
 
 
 def get_test_audio(name: AudioFilename) -> Path:

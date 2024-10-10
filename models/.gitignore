@@ -1,5 +1,0 @@
-*.json
-*.txt
-*.safetensors
-*.bin
-!requirements.txt

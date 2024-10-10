@@ -7,6 +7,9 @@ Model = Literal[
     "openai/whisper-large-v2",
     "openai/whisper-large-v3",
     "openai/whisper-large-v3-turbo",
+    # faster-whisper CT2 models
+    "deepdml/faster-whisper-large-v3-turbo-ct2",
+    "Systran/faster-whisper-large-v2",
 ]
 
 MODEL_DIR = Path("models/")

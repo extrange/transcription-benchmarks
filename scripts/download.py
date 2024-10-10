@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import torch
 from transformers import pipeline
@@ -10,20 +11,24 @@ setup_logging()
 _logger = logging.getLogger(__name__)
 
 
-def download_model(model: Model) -> None:
-    """Download a HuggingFace model to a the `models/` directory."""
+def download_hf_model(model: Model, save_dir: Path = MODEL_DIR) -> Path:
+    """
+    Download a HuggingFace model to a directory.
 
-    target_dir = MODEL_DIR / model.replace("/", "-")
-    _logger.info("Downloading model to %s", target_dir)
-    if target_dir.exists():
-        _logger.error("%s already exists, bailing", target_dir)
-        return
-
+    Returns path to the model directory.
+    """
+    target_dir = get_model_dir(model, save_dir)
     pipe = pipeline(
         "automatic-speech-recognition",
         model=model,
         torch_dtype=torch.float16,
         device="cuda:0",
     )
-
     pipe.save_pretrained(target_dir)
+    _logger.info("Downloaded model '%s' to %s", model, target_dir)
+    return target_dir
+
+
+def get_model_dir(model: Model, base_dir: Path = MODEL_DIR) -> Path:
+    """Return path to a model."""
+    return base_dir / model.replace("/", "-")

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import Literal
 
 from faster_whisper.vad import VadOptions
 from pydantic import BaseModel
@@ -14,7 +15,7 @@ class FasterWhisperArgs(BaseModel):
     """
 
     language: str | None = None
-    task: str = "transcribe"
+    task: Literal["transcribe", "translate"] = "transcribe"
     beam_size: int = 5
     best_of: int = 5
     patience: float = 1
@@ -57,6 +58,47 @@ class FasterWhisperArgs(BaseModel):
     language_detection_segments: int = 1
 
 
+class FasterWhisperBatchArgs(BaseModel):
+    """
+    Arguments as per BatchedInferencePipeline.transcribe.
+
+    `audio` and `batch_size` are removed.
+    """
+
+    vad_segments: list[dict] | None = None
+    language: str | None = None
+    task: Literal["transcribe", "translate"] = "transcribe"
+    log_progress: bool = False
+    beam_size: int = 5
+    best_of: int = 5
+    patience: float = 1
+    length_penalty: float = 1
+    repetition_penalty: float = 1
+    no_repeat_ngram_size: int = 0
+    temperature: float | list[float] | tuple[float, ...] = [
+        0.0,
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1.0,
+    ]
+    compression_ratio_threshold: float | None = 2.4
+    log_prob_threshold: float | None = -1.0
+    log_prob_low_threshold: float | None = None
+    no_speech_threshold: float | None = 0.6
+    initial_prompt: str | Iterable[int] | None = None
+    prefix: str | None = None
+    suppress_blank: bool = True
+    suppress_tokens: list[int] | None = [-1]
+    prepend_punctuations: str = "\"'“¿([{-"
+    append_punctuations: str = "\"'.。,，!！?？:：”)]}、"  # noqa: RUF001
+    max_new_tokens: int | None = None
+    hotwords: str | None = None
+    word_timestamps: bool = False
+    without_timestamps: bool = True
+
+
 class Segment(BaseModel):
     """Transcription segment."""
 
@@ -71,6 +113,8 @@ class BenchArgs(BaseModel):
 
     test_file: AudioFilename = "1min.flac"
     batch_size: int | None = 24
+
+    """Note: for faster-whisper, you should specify a batch size of 16 which is the default."""
     chunk_length_s: int | None = 30
     hf_model_kwargs: dict = {}
     """
@@ -80,13 +124,21 @@ class BenchArgs(BaseModel):
     """
     Dict of parameters passed to [WhisperForConditionalGeneration.generate](https://huggingface.co/docs/transformers/v4.45.2/en/model_doc/whisper#transformers.WhisperForConditionalGeneration.generate)
     """
-    fw_args: FasterWhisperArgs | None = None
+    fw_args: FasterWhisperArgs | FasterWhisperBatchArgs | None = None
+
+
+class DetectedLanguage(BaseModel):
+    """Detected language for a model."""
+
+    name: str
+    probability: float | None = None
 
 
 class BenchResult(BaseModel):
     """Model benchmark result."""
 
     model: str
+    detected_language: DetectedLanguage | None = None
     text: list[Segment]
     """Should be sorted."""
     params: BenchArgs

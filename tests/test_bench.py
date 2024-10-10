@@ -1,6 +1,6 @@
 import pytest
 
-from app_types.bench import BenchArgs, FasterWhisperArgs
+from app_types.bench import BenchArgs, FasterWhisperArgs, FasterWhisperBatchArgs
 from benchmark.bench import bench
 
 
@@ -23,6 +23,24 @@ def test_openai_whisper_large_v3_turbo() -> None:
     )
 
 
+def test_fw_whisper_large_v2() -> None:
+    res = bench("Systran/faster-whisper-large-v2")
+    assert (
+        res.get_text()
+        == "[0.00s -> 6.00s]  Ladies and gentlemen, thank you for being here and for your written representations.\n[6.00s -> 10.70s]  You know what the purpose of this select committee is.\n[10.70s -> 19.20s]  We are exploring the risks, the ways in which deliberate online falsehoods are spread,\n[19.20s -> 24.90s]  and we are primarily restricting ourselves to deliberate online falsehoods.\n[24.90s -> 30.30s]  We call them DOFs, and what we should do about the situation.\n[30.30s -> 36.90s]  So I think it's useful to be clear about the approach we are going to take in these discussions.\n[36.90s -> 45.50s]  We see you, the entire panel, as people who enable communications and technology enables communications.\n[45.50s -> 50.50s]  It has brought immense benefits. It has revolutionized societies.\n[50.50s -> 55.90s]  It has given more freedom to people, and at the same time there are some issues.\n[55.90s -> 59.90s]  And we see you as partners in trying to deal with those issues."
+    )
+
+
+def test_fw_whisper_large_v2_batch() -> None:
+    res = bench(
+        "Systran/faster-whisper-large-v2", BenchArgs(fw_args=FasterWhisperBatchArgs())
+    )
+    assert (
+        res.get_text()
+        == "[0.00s -> 28.95s]  Ladies and gentlemen, thank you for being here and for your written representations. You know what the purpose of this select committee is. We are exploring the risks, the ways in which deliberate online falsehoods are spread, and we are primarily restricting ourselves to deliberate online falsehoods. We call them DOFs. And what we should do about the situation.\n[30.23s -> 59.34s]  So I think it's useful to be clear about the approach we are going to take in these discussions. We see you, the entire panel, as people who enable communications, and technology enables communications. It has brought immense benefits. It has revolutionized societies. It has given more freedom to people. And at the same time, there are some issues. And we see you as partners in trying to deal with those issues."
+    )
+
+
 def test_raise_on_fw_model_with_pytorch_args() -> None:
     with pytest.raises(
         ValueError,
@@ -40,3 +58,11 @@ def test_raise_on_pytorch_model_with_fw_args() -> None:
         match="You have supplied a PyTorch model='openai/whisper-large-v2' but also specified faster-whisper specific arguments:",
     ):
         bench("openai/whisper-large-v2", BenchArgs(fw_args=FasterWhisperArgs()))
+
+
+def test_raise_on_pytorch_model_with_fw_batch_args() -> None:
+    with pytest.raises(
+        ValueError,
+        match="You have supplied a PyTorch model='openai/whisper-large-v2' but also specified faster-whisper specific arguments:",
+    ):
+        bench("openai/whisper-large-v2", BenchArgs(fw_args=FasterWhisperBatchArgs()))

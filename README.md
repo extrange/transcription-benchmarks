@@ -35,9 +35,14 @@ Create a virtual environment with `uv venv`. Subsequently, configure VSCode to u
 
 After activating that environment, you can then run modules with `python -m your.module`.
 
-Usage:
+## Usage
 
 ```python
+# Benchmark
+from benchmark.bench import bench
+res = bench("openai/whisper-large-v2")
+print(res.get_text())
+
 # Deploy
 from scripts.deploy import deploy_locally
 
@@ -48,6 +53,10 @@ from scripts.predict import predict_local
 
 predict_local(predictor.endpoint_name, "10min.flac")
 ```
+
+## Testing
+
+`coverage run --branch -m pytest && coverage html`
 
 ## Sagemake Pricing and Instances
 

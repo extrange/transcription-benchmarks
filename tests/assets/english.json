@@ -1,0 +1,13 @@
+{
+  "test_file": "1min.flac",
+  "batch_size": 15,
+  "chunk_length_s": 30,
+  "fw_args": {
+    "language": "en",
+    "beam_size": 5,
+    "compression_ratio_threshold": 1.5,
+    "no_speech_threshold": 0.6,
+    "condition_on_previous_text": true,
+    "multilingual": false
+  }
+}

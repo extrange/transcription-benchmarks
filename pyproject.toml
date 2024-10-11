@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "faster-whisper>=1.0.3",
+    "python-utils",
     "sagemaker[local]>=2.232.1",
     "torch >= 2.1.0",
     "torchaudio >=2.1.0",
@@ -31,6 +32,7 @@ dev-dependencies = [
 
 [tool.uv.sources]
 faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper.git" }
+python-utils = { git = "https://github.com/extrange/python-utils" }
 
 [tool.pyright]
 # pre-commit: make pyright use the venv

@@ -1902,6 +1902,11 @@ wheels = [
 ]
 
 [[package]]
+name = "python-utils"
+version = "1.1.0"
+source = { git = "https://github.com/extrange/python-utils#8f4e4229cd3f99f40b116f1aafd16445f24c5072" }
+
+[[package]]
 name = "pytorch-lightning"
 version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2846,6 +2851,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "faster-whisper" },
+    { name = "python-utils" },
     { name = "sagemaker", extra = ["local"] },
     { name = "torch" },
     { name = "torchaudio" },
@@ -2867,6 +2873,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "faster-whisper", git = "https://github.com/SYSTRAN/faster-whisper.git" },
+    { name = "python-utils", git = "https://github.com/extrange/python-utils" },
     { name = "sagemaker", extras = ["local"], specifier = ">=2.232.1" },
     { name = "torch", specifier = ">=2.1.0" },
     { name = "torchaudio", specifier = ">=2.1.0" },

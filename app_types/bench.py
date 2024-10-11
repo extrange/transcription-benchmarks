@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Literal
+from typing import Any, Literal, TypedDict
 
 from faster_whisper.vad import VadOptions
 from pydantic import BaseModel
@@ -104,8 +104,39 @@ class Segment(BaseModel):
 
     text: str
     start: float
-    end: float
+    end: float | None
+    """Can be None, if audio was cutoff during a word."""
     log_prob: float | None = None
+
+
+class _HfModelKwargs(TypedDict):
+    """Selected parameters only. All are optional."""
+
+    attn_implementation: Literal["eager", "sdpa", "flash_attention_2"]
+    """By default, if available, SDPA will be used for torch>=2.1.1. The default is otherwise the manual "eager" implementation."""
+
+
+class _HfGenerateKwargs(TypedDict):
+    """Selected parameters only. All are optional."""
+
+    return_timestamps: bool
+    task: Literal["translate", "transcribe"]
+    language: str
+    is_multilingual: bool
+    prompt_condition_type: str
+    condition_on_prev_tokens: bool
+    temperature: float | list[float]
+    compression_ratio_threshold: float
+    logprob_threshold: float
+    no_speech_threshold: float
+    return_segments: bool
+    return_dict_in_generate: bool
+
+    # Passed to generation_config
+    num_beams: int
+    do_sample: bool
+    penalty_alpha: float
+    top_k: int
 
 
 class BenchArgs(BaseModel):
@@ -116,15 +147,16 @@ class BenchArgs(BaseModel):
 
     """Note: for faster-whisper, you should specify a batch size of 16 which is the default."""
     chunk_length_s: int | None = 30
-    hf_model_kwargs: dict = {}
+    hf_model_kwargs: _HfModelKwargs | dict[str, Any] = {}
     """
-    Dict of parameters passed to the pipeline's [model_kwargs](https://huggingface.co/docs/transformers/en/main_classes/pipelines#transformers.pipeline.model_kwargs).
+    Dict of parameters passed to [PreTrainedModel.from_pretrained](https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained).
     """
-    hf_generate_kwargs: dict = {}
+    hf_generate_kwargs: _HfGenerateKwargs | dict[str, Any] = {}
     """
-    Dict of parameters passed to [WhisperForConditionalGeneration.generate](https://huggingface.co/docs/transformers/v4.45.2/en/model_doc/whisper#transformers.WhisperForConditionalGeneration.generate)
+    Dict of parameters passed to [WhisperForConditionalGeneration.generate](https://huggingface.co/docs/transformers/v4.45.2/en/model_doc/whisper#transformers.WhisperForConditionalGeneration.generate). You can also pass parameters for [generation_config](https://huggingface.co/docs/transformers/v4.45.2/en/generation_strategies#decoding-strategies) (e.g. `num_beams`)
     """
-    fw_args: FasterWhisperArgs | FasterWhisperBatchArgs | None = None
+    fw_args: FasterWhisperArgs | FasterWhisperBatchArgs = FasterWhisperArgs()
+    """Arguments for faster-whisper. Ignored if model is not a faster-whisper one."""
 
 
 class DetectedLanguage(BaseModel):
@@ -152,7 +184,7 @@ class BenchResult(BaseModel):
         """Return transcribed text, optionally with timestamps."""
         if with_timestamps:
             return "\n".join(
-                f"[{s.start:.2f}s -> {s.end:.2f}s] {s.text}" for s in self.text
+                f"[{s.start:.2f}s -> {s.end or 0.0:.2f}s] {s.text}" for s in self.text
             )
         return "".join(s.text for s in self.text)
 

@@ -31,6 +31,7 @@ convention = "pep257"
 # Don't enforce certain rules on test files
 "tests/**" = [
     "D",       # Documentation related
+    "ANN001",  # Parameter typing
     "ANN201",  # Missing return-type annotation
     "ANN202",  # missing-return-type-private-function
     "S101",    # Use of assert

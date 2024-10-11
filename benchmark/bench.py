@@ -37,15 +37,15 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
 
     if model in get_args(FasterWhisperModel):
         if args.hf_generate_kwargs or args.hf_model_kwargs:
-            msg = f"You have supplied a faster-whisper {model=} but also specified PyTorch model specific arguments: {args.hf_generate_kwargs=} {args.hf_model_kwargs}"
-            raise ValueError(msg)
+            _logger.warning(
+                "You have supplied a faster-whisper model %s but also specified PyTorch model arguments which will be ignored: %s, %s",
+                model,
+                args.hf_model_kwargs,
+                args.hf_generate_kwargs,
+            )
         return _run_fw_model(model, model_dir, args, audio_file, audio_duration)
 
     if model in get_args(PytorchModel):
-        if args.fw_args:
-            msg = f"You have supplied a PyTorch {model=} but also specified faster-whisper specific arguments: {args.fw_args=}"
-            raise ValueError(msg)
-
         return _run_transformers(model, model_dir, args, audio_file, audio_duration)
 
     msg = f"Invalid model name: {model=}"
@@ -75,7 +75,7 @@ def _run_fw_model(
         _logger.info("Using faster-whisper BatchedInferencePipeline")
     else:
         segments, info = fw_model.transcribe(
-            audio=str(audio_file), **args.fw_args.model_dump() if args.fw_args else {}
+            audio=str(audio_file), **args.fw_args.model_dump()
         )
         _logger.info("Using faster-whisper without batching")
 
@@ -94,8 +94,8 @@ def _run_fw_model(
         _logger.info("[%.2fs -> %.2fs] %s", s.start, s.end, s.text)
     transcribe_time = time.time() - start
 
-    # TODO is this accurate
     memory_peak = torch.cuda.max_memory_allocated()
+    torch.cuda.empty_cache()
 
     return BenchResult(
         model=model,
@@ -120,7 +120,7 @@ def _run_transformers(
         model=str(model_dir),
         torch_dtype=torch.float16,
         device="cuda:0",
-        model_kwargs=args.hf_model_kwargs,
+        model_kwargs=args.hf_model_kwargs,  # pyright:ignore[reportArgumentType]
     )
 
     _logger.info("Starting benchmark...")
@@ -152,3 +152,26 @@ def _run_transformers(
         gpu_mem_bytes=memory_peak,
         audio_duration_s=audio_duration,
     )
+
+
+def _cli() -> None:
+    from argparse import ArgumentParser
+
+    from pydantic_core import from_json
+
+    parser = ArgumentParser()
+    parser.add_argument("-c", "--config")
+    parser.add_argument("-m", "--model", default="Systran/faster-whisper-large-v2")
+    args = parser.parse_args()
+
+    with Path.open(args.config) as cfg:
+        config = from_json(cfg.read())
+
+    res = bench(args.model, BenchArgs(**config))
+    _logger.info(res.get_text())
+    _logger.info(res.get_stats())
+    _logger.info(res.params)
+
+
+if __name__ == "__main__":
+    _cli()

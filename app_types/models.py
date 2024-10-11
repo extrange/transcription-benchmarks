@@ -11,6 +11,7 @@ PytorchModel = Literal[
 
 FasterWhisperModel = Literal[
     "deepdml/faster-whisper-large-v3-turbo-ct2",
+    "Systran/faster-whisper-large-v3",
     "Systran/faster-whisper-large-v2",
 ]
 

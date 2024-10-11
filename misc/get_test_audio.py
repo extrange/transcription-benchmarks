@@ -13,7 +13,11 @@ AudioFilename = Literal[
     "noisy.flac",
     "long.flac",
     "mixed.m4a",
+    "music.flac",
+    "chinese_song.flac",
+    "hokkien.flac",
 ]
+"""Refer to the readme.md in `test_audio` for descriptions."""
 
 
 def get_test_audio(name: AudioFilename) -> Path:

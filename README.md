@@ -1,27 +1,34 @@
 # Whisper in Sagemaker
 
-Using [audio file][1hour.flac] of length 1:13:10 (4390s) for all tests.
+Refer [here][test-files] for test file descriptions.
 
-| Model                           | Speed | Peak VRAM | Config                                |
-|---------------------------------|-------|-----------|---------------------------------------|
-| openai/whisper-large-v3         | 31.5x | 9792MB    | fp16, batch=24, SDPA                  |
-| distil-whisper/distil-large-v3  | 87.1x | 2667MB    | fp16, batch=24, SDPA                  |
-| distil-whisper/distil-large-v3  | 62.0x |           | fp16, batch=24                        |
-| ylacombe/whisper-large-v3-turbo | 81.8x | 2772MB    | fp16, batch=24, SDPA                  |
-| ylacombe/whisper-large-v3-turbo | 31.4x | 2772MB    | fp16, batch=None, SDPA                |
-| nvidia/canary-1b                |       | OOM       | vanilla                               |
-| openai/whisper-large-v3         | 10.5x |           | faster-whisper, beam_size=1           |
-| openai/whisper-large-v3         | 51.8x |           | faster-whisper, batch=24, beam_size=1 |
-| openai/whisper-large-v2         | 50.9x | 10GB      | faster-whisper, batch=16, beam_size=1 |
-| distil-whisper/distil-large-v3  | 89.4x |           | faster-whisper, batch=24, beam_size=1 |
-| distil-whisper/distil-large-v3  | 83.7x |           | faster-whisper, batch=24, beam_size=5 |
-| ylacombe/whisper-large-v3-turbo | 21.8x | ~4700MB   | faster-whisper, batch=None            |
-| ylacombe/whisper-large-v3-turbo | 76.2x | ~10237MB  | faster-whisper, batch=24              |
+| Model                                     | Speed | Peak VRAM | Config                  | Test File  |
+|-------------------------------------------|-------|-----------|-------------------------|------------|
+| openai/whisper-large-v3                   | 31.5x | 9792MB    | fp16, batch=24, SDPA    | 1hour.flac |
+| distil-whisper/distil-large-v3            | 87.1x | 2667MB    | fp16, batch=24, SDPA    | 1hour.flac |
+| distil-whisper/distil-large-v3            | 62.0x |           | fp16, batch=24          | 1hour.flac |
+| openai/whisper-large-v3-turbo             | 81.8x | 2772MB    | fp16, batch=24, SDPA    | 1hour.flac |
+| openai/whisper-large-v3-turbo             | 31.4x | 2772MB    | fp16, batch=None, SDPA  | 1hour.flac |
+| nvidia/canary-1b                          |       | OOM       | vanilla                 | 1hour.flac |
+| Systran/faster-whisper-large-v3           | 10.5x |           | batch=None, beam_size=1 | 1hour.flac |
+| Systran/faster-whisper-large-v3           | 51.8x |           | batch=24, beam_size=1   | 1hour.flac |
+| Systran/faster-whisper-large-v2           | 50.9x | 10GB      | batch=16, beam_size=1   | 1hour.flac |
+| Systran/faster-whisper-large-v2           | 34x   | 11GB      | batch=16, beam_size=5   | 1hour.flac |
+| Systran/faster-whisper-large-v2           |       | OOM       | batch=16, beam_size=5   | long.flac  |
+| Systran/faster-whisper-large-v2           | 53.5x | 14GB      | batch=12, beam_size=5   | long.flac  |
+| Systran/faster-whisper-large-v2           | 50.9x | 13GB      | batch=8, beam_size=5    | long.flac  |
+| Systran/faster-whisper-large-v2           | 49x   | 12GB      | batch=6, beam_size=5    | long.flac  |
+| Systran/faster-whisper-large-v2           | 11.9x | 6.8GB     | batch=None, beam_size=5 | 1hour.flac |
+| Systran/faster-whisper-large-v2           | 18.3x | 6.8GB     | batch=None, beam_size=1 | 1hour.flac |
+| Systran/faster-distil-whisper-large-v3    | 89.4x |           | batch=24, beam_size=1   | 1hour.flac |
+| Systran/faster-distil-whisper-large-v3    | 83.7x |           | batch=24, beam_size=5   | 1hour.flac |
+| deepdml/faster-whisper-large-v3-turbo-ct2 | 21.8x | ~4700MB   | batch=None, beam_size=5 | 1hour.flac |
+| deepdml/faster-whisper-large-v3-turbo-ct2 | 76.2x | ~10237MB  | batch=24, beam_size=5   | 1hour.flac |
 
 Notes:
 
 - `distil` models are all bad at multilingual speech.
-- The best performing model for noisy/multilingual environments is `openai/whisper-large-v2`.
+- The best performing model for noisy/multilingual environments is `openai/whisper-large-v2`, with the faster-whisper CT2 implementation performing better than the Transformers one (I cannot replicate the exact parameters, e.g. the output of both are different even with batch_size=None and num_beams=5).
 - SDPA is only available in Pytorch 2.1.1 and above. In order to use it in the SageMaker images, the PyTorch version is overridden via `requirements.txt`. Tested in Sagemaker Local Mode.
 - faster-whisper doesn't really provide significant speedups. Consider investigating whether total memory usage is lower, however.
 
@@ -110,4 +117,4 @@ The underlying EC2 instance ran out of GPU memory.
 
 [mms-env-vars]: https://github.com/awslabs/multi-model-server/blob/master/docs/configuration.md
 [configmanager.java]: https://github.com/awslabs/multi-model-server/blob/master/frontend/server/src/main/java/com/amazonaws/ml/mms/util/ConfigManager.java
-[1hour.flac]: test_audio/1hour.flac
+[test-files]: test_audio/readme.md

@@ -17,7 +17,7 @@ from sagemaker.predictor_async import AsyncPredictor
 from sagemaker.serializers import DataSerializer
 from sagemaker.utils import name_from_base
 
-from misc.setup_logging import setup_logging
+from transcription_benchmarks.misc.setup_logging import setup_logging
 
 setup_logging()
 _logger = logging.getLogger(__name__)

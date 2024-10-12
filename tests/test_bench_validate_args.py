@@ -1,7 +1,11 @@
 import logging
 
-from app_types.bench import BenchArgs, FasterWhisperArgs, FasterWhisperBatchArgs
-from benchmark.bench import _validate_args
+from transcription_benchmarks.app_types.bench import (
+    BenchArgs,
+    FasterWhisperArgs,
+    FasterWhisperBatchArgs,
+)
+from transcription_benchmarks.benchmark.bench import _validate_args
 
 
 def test_warn_on_fw_model_with_pytorch_args(caplog) -> None:

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from python_utils.dict_diff import dict_diff
 from python_utils.format_hhmmss import format_hhmmss
 
-from misc.get_test_audio import AudioFilename
+from transcription_benchmarks.misc.get_test_audio import AudioFilename
 
 
 class _DictDiffBase(BaseModel):

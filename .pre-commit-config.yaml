@@ -27,6 +27,6 @@ repos:
         language: system
         stages: ["pre-commit", "pre-push"]
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.383
+    rev: v1.1.384
     hooks:
       - id: pyright

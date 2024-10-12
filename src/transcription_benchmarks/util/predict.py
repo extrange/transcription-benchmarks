@@ -9,7 +9,7 @@ from sagemaker.local import LocalSession
 from sagemaker.predictor_async import AsyncPredictor
 from sagemaker.serializers import DataSerializer
 
-from misc.get_test_audio import AudioFilename, get_test_audio
+from transcription_benchmarks.misc.get_test_audio import AudioFilename, get_test_audio
 
 _logger = logging.getLogger(__name__)
 

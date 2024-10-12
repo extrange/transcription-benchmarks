@@ -29,6 +29,7 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "pytest-cov>=5.0.0",
 ]
+package = true
 
 [tool.uv.sources]
 faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper.git" }

@@ -6,24 +6,24 @@ import torch
 from faster_whisper import BatchedInferencePipeline, WhisperModel
 from transformers import pipeline
 
-from app_types.bench import (
+from transcription_benchmarks.app_types.bench import (
     BenchArgs,
     BenchResult,
     FasterWhisperArgs,
     FasterWhisperBatchArgs,
     Segment,
 )
-from app_types.models import (
+from transcription_benchmarks.app_types.models import (
     FasterWhisperModel,
     Model,
     PytorchModel,
     is_fw_model,
     is_pytorch_model,
 )
-from app_types.util import diff_fw_args
-from misc.get_test_audio import get_duration, get_test_audio
-from misc.setup_logging import setup_logging
-from util.download import download_hf_model, get_model_dir
+from transcription_benchmarks.app_types.util import diff_fw_args
+from transcription_benchmarks.misc.get_test_audio import get_duration, get_test_audio
+from transcription_benchmarks.misc.setup_logging import setup_logging
+from transcription_benchmarks.util.download import download_hf_model, get_model_dir
 
 setup_logging()
 _logger = logging.getLogger(__name__)

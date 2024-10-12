@@ -1,6 +1,9 @@
 from typing import Any
 
-from app_types.bench import FasterWhisperArgs, FasterWhisperBatchArgs
+from transcription_benchmarks.app_types.bench import (
+    FasterWhisperArgs,
+    FasterWhisperBatchArgs,
+)
 
 
 def diff_fw_args(fw_args: FasterWhisperArgs | FasterWhisperBatchArgs) -> dict[str, Any]:

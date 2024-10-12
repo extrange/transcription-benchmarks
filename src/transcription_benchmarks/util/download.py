@@ -3,8 +3,8 @@ from pathlib import Path
 
 from huggingface_hub import snapshot_download
 
-from app_types.models import MODEL_DIR, Model
-from misc.setup_logging import setup_logging
+from transcription_benchmarks.app_types.models import MODEL_DIR, Model
+from transcription_benchmarks.misc.setup_logging import setup_logging
 
 setup_logging()
 _logger = logging.getLogger(__name__)

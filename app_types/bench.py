@@ -4,6 +4,7 @@ from typing import Any, Literal, TypedDict
 from faster_whisper.vad import VadOptions
 from pydantic import BaseModel
 from python_utils.dict_diff import dict_diff
+from python_utils.format_hhmmss import format_hhmmss
 
 from misc.get_test_audio import AudioFilename
 
@@ -190,7 +191,8 @@ class BenchResult(BaseModel):
         """Return transcribed text, optionally with timestamps."""
         if with_timestamps:
             return "\n".join(
-                f"[{s.start:.2f}s -> {s.end or 0.0:.2f}s] {s.text}" for s in self.text
+                f"[{format_hhmmss(s.start)} -> {format_hhmmss(s.end or 0)}] {s.text}"
+                for s in self.text
             )
         return "".join(s.text for s in self.text)
 

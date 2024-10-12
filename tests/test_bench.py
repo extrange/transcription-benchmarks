@@ -1,6 +1,4 @@
-import pytest
-
-from app_types.bench import BenchArgs, FasterWhisperArgs, FasterWhisperBatchArgs
+from app_types.bench import BenchArgs, FasterWhisperBatchArgs
 from benchmark.bench import bench
 
 
@@ -39,30 +37,3 @@ def test_fw_whisper_large_v2_batch() -> None:
         res.get_text()
         == "[0.00s -> 28.95s]  Ladies and gentlemen, thank you for being here and for your written representations. You know what the purpose of this select committee is. We are exploring the risks, the ways in which deliberate online falsehoods are spread, and we are primarily restricting ourselves to deliberate online falsehoods. We call them DOFs. And what we should do about the situation.\n[30.23s -> 59.34s]  So I think it's useful to be clear about the approach we are going to take in these discussions. We see you, the entire panel, as people who enable communications, and technology enables communications. It has brought immense benefits. It has revolutionized societies. It has given more freedom to people. And at the same time, there are some issues. And we see you as partners in trying to deal with those issues."
     )
-
-
-def test_raise_on_fw_model_with_pytorch_args() -> None:
-    with pytest.raises(
-        ValueError,
-        match="You have supplied a faster-whisper model='deepdml/faster-whisper-large-v3-turbo-ct2' but also specified PyTorch model specific arguments: args.hf_generate_kwargs={} {'attn_implementation': 'sdpa'}",
-    ):
-        bench(
-            "deepdml/faster-whisper-large-v3-turbo-ct2",
-            BenchArgs(hf_model_kwargs={"attn_implementation": "sdpa"}),
-        )
-
-
-def test_raise_on_pytorch_model_with_fw_args() -> None:
-    with pytest.raises(
-        ValueError,
-        match="You have supplied a PyTorch model='openai/whisper-large-v2' but also specified faster-whisper specific arguments:",
-    ):
-        bench("openai/whisper-large-v2", BenchArgs(fw_args=FasterWhisperArgs()))
-
-
-def test_raise_on_pytorch_model_with_fw_batch_args() -> None:
-    with pytest.raises(
-        ValueError,
-        match="You have supplied a PyTorch model='openai/whisper-large-v2' but also specified faster-whisper specific arguments:",
-    ):
-        bench("openai/whisper-large-v2", BenchArgs(fw_args=FasterWhisperBatchArgs()))

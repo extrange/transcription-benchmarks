@@ -1,7 +1,6 @@
 import logging
 import time
 from pathlib import Path
-from typing import get_args
 
 import torch
 from faster_whisper import BatchedInferencePipeline, WhisperModel
@@ -10,10 +9,18 @@ from transformers import pipeline
 from app_types.bench import (
     BenchArgs,
     BenchResult,
+    FasterWhisperArgs,
     FasterWhisperBatchArgs,
     Segment,
 )
-from app_types.models import FasterWhisperModel, Model, PytorchModel
+from app_types.models import (
+    FasterWhisperModel,
+    Model,
+    PytorchModel,
+    is_fw_model,
+    is_pytorch_model,
+)
+from app_types.util import diff_fw_args
 from misc.get_test_audio import get_duration, get_test_audio
 from misc.setup_logging import setup_logging
 from util.download import download_hf_model, get_model_dir
@@ -27,6 +34,8 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
     if args is None:
         args = BenchArgs()
 
+    _validate_args(model, args)
+
     model_dir = get_model_dir(model)
     if not model_dir.exists():
         _logger.info("Could not find model in %s, downloading", model_dir)
@@ -35,21 +44,29 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
     audio_file = get_test_audio(args.test_file)
     audio_duration = get_duration(audio_file)
 
-    if model in get_args(FasterWhisperModel):
-        if args.hf_generate_kwargs or args.hf_model_kwargs:
-            _logger.warning(
-                "You have supplied a faster-whisper model %s but also specified PyTorch model arguments which will be ignored: %s, %s",
-                model,
-                args.hf_model_kwargs,
-                args.hf_generate_kwargs,
-            )
+    if is_fw_model(model):
         return _run_fw_model(model, model_dir, args, audio_file, audio_duration)
-
-    if model in get_args(PytorchModel):
+    if is_pytorch_model(model):
         return _run_transformers(model, model_dir, args, audio_file, audio_duration)
-
     msg = f"Invalid model name: {model=}"
     raise ValueError(msg)
+
+
+def _validate_args(model: Model, args: BenchArgs) -> None:
+    if is_fw_model(model) and (args.hf_generate_kwargs or args.hf_model_kwargs):
+        _logger.warning(
+            "You have supplied a faster-whisper model %s but also specified PyTorch model arguments which will be ignored: %s, %s",
+            model,
+            args.hf_model_kwargs,
+            args.hf_generate_kwargs,
+        )
+    # User modified the default fw_args parameter
+    elif is_pytorch_model(model) and (args.fw_args != FasterWhisperArgs()):
+        _logger.warning(
+            "You have supplied a pytorch model %s but also specified faster-whisper model arguments which will be ignored: %s",
+            model,
+            diff_fw_args(args.fw_args),
+        )
 
 
 def _run_fw_model(

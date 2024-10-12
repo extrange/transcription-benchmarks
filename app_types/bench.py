@@ -3,11 +3,17 @@ from typing import Any, Literal, TypedDict
 
 from faster_whisper.vad import VadOptions
 from pydantic import BaseModel
+from python_utils.dict_diff import dict_diff
 
 from misc.get_test_audio import AudioFilename
 
 
-class FasterWhisperArgs(BaseModel):
+class _DictDiffBase(BaseModel):
+    def dict_diff(self, other: BaseModel) -> dict[str, Any]:
+        return dict_diff(self.model_dump(), other.model_dump())
+
+
+class FasterWhisperArgs(_DictDiffBase):
     """
     Arguments as per the non-batched `WhisperModel.transcribe`.
 
@@ -58,7 +64,7 @@ class FasterWhisperArgs(BaseModel):
     language_detection_segments: int = 1
 
 
-class FasterWhisperBatchArgs(BaseModel):
+class FasterWhisperBatchArgs(_DictDiffBase):
     """
     Arguments as per BatchedInferencePipeline.transcribe.
 

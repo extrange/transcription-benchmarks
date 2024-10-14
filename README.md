@@ -2,8 +2,10 @@
 
 Refer [here][test-files] for test file descriptions.
 
+All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM).
+
 | Model                                     | Speed | Peak VRAM | Config                  | Test File  |
-|-------------------------------------------|-------|-----------|-------------------------|------------|
+| ----------------------------------------- | ----- | --------- | ----------------------- | ---------- |
 | openai/whisper-large-v3                   | 31.5x | 9792MB    | fp16, batch=24, SDPA    | 1hour.flac |
 | distil-whisper/distil-large-v3            | 87.1x | 2667MB    | fp16, batch=24, SDPA    | 1hour.flac |
 | distil-whisper/distil-large-v3            | 62.0x |           | fp16, batch=24          | 1hour.flac |
@@ -28,7 +30,7 @@ Refer [here][test-files] for test file descriptions.
 Notes:
 
 - `distil` models are all bad at multilingual speech.
-- The best performing model for noisy/multilingual environments is `openai/whisper-large-v2`, with the faster-whisper CT2 implementation performing better than the Transformers one (I cannot replicate the exact parameters, e.g. the output of both are different even with batch_size=None and num_beams=5).
+- The best performing model for noisy/multilingual environments is `openai/whisper-large-v2`, with the faster-whisper CT2 implementation performing better than the Transformers one, presumably because of many enhancements made to filter out low probability segments (I cannot replicate the exact parameters, e.g. the output of both are different even with batch_size=None and num_beams=5).
 - SDPA is only available in Pytorch 2.1.1 and above. In order to use it in the SageMaker images, the PyTorch version is overridden via `requirements.txt`. Tested in Sagemaker Local Mode.
 - faster-whisper doesn't really provide significant speedups. Consider investigating whether total memory usage is lower, however.
 

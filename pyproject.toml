@@ -5,7 +5,9 @@ description = "Testing ground for whisper on sagemaker"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "brotli>=1.1.0",
     "faster-whisper>=1.0.3",
+    "multi-model-server>=1.1.11",
     "python-utils",
     "sagemaker[local]>=2.232.1",
     "torch >= 2.1.0",

@@ -4,28 +4,29 @@ Refer [here][test-files] for test file descriptions.
 
 All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM).
 
-| Model                                     | Speed | Peak VRAM | Config                  | Test File  |
-| ----------------------------------------- | ----- | --------- | ----------------------- | ---------- |
-| openai/whisper-large-v3                   | 31.5x | 9792MB    | fp16, batch=24, SDPA    | 1hour.flac |
-| distil-whisper/distil-large-v3            | 87.1x | 2667MB    | fp16, batch=24, SDPA    | 1hour.flac |
-| distil-whisper/distil-large-v3            | 62.0x |           | fp16, batch=24          | 1hour.flac |
-| openai/whisper-large-v3-turbo             | 81.8x | 2772MB    | fp16, batch=24, SDPA    | 1hour.flac |
-| openai/whisper-large-v3-turbo             | 31.4x | 2772MB    | fp16, batch=None, SDPA  | 1hour.flac |
-| nvidia/canary-1b                          |       | OOM       | vanilla                 | 1hour.flac |
-| Systran/faster-whisper-large-v3           | 10.5x |           | batch=None, beam_size=1 | 1hour.flac |
-| Systran/faster-whisper-large-v3           | 51.8x |           | batch=24, beam_size=1   | 1hour.flac |
-| Systran/faster-whisper-large-v2           | 50.9x | 10GB      | batch=16, beam_size=1   | 1hour.flac |
-| Systran/faster-whisper-large-v2           | 34x   | 11GB      | batch=16, beam_size=5   | 1hour.flac |
-| Systran/faster-whisper-large-v2           |       | OOM       | batch=16, beam_size=5   | long.flac  |
-| Systran/faster-whisper-large-v2           | 53.5x | 14GB      | batch=12, beam_size=5   | long.flac  |
-| Systran/faster-whisper-large-v2           | 50.9x | 13GB      | batch=8, beam_size=5    | long.flac  |
-| Systran/faster-whisper-large-v2           | 49x   | 12GB      | batch=6, beam_size=5    | long.flac  |
-| Systran/faster-whisper-large-v2           | 11.9x | 6.8GB     | batch=None, beam_size=5 | 1hour.flac |
-| Systran/faster-whisper-large-v2           | 18.3x | 6.8GB     | batch=None, beam_size=1 | 1hour.flac |
-| Systran/faster-distil-whisper-large-v3    | 89.4x |           | batch=24, beam_size=1   | 1hour.flac |
-| Systran/faster-distil-whisper-large-v3    | 83.7x |           | batch=24, beam_size=5   | 1hour.flac |
-| deepdml/faster-whisper-large-v3-turbo-ct2 | 21.8x | ~4700MB   | batch=None, beam_size=5 | 1hour.flac |
-| deepdml/faster-whisper-large-v3-turbo-ct2 | 76.2x | ~10237MB  | batch=24, beam_size=5   | 1hour.flac |
+| Model                                     | Speed | Peak VRAM | Config                             | Test File  |
+| ----------------------------------------- | ----- | --------- | ---------------------------------- | ---------- |
+| openai/whisper-large-v3                   | 31.5x | 9792MB    | fp16, batch=24, SDPA               | 1hour.flac |
+| distil-whisper/distil-large-v3            | 87.1x | 2667MB    | fp16, batch=24, SDPA               | 1hour.flac |
+| distil-whisper/distil-large-v3            | 62.0x |           | fp16, batch=24                     | 1hour.flac |
+| openai/whisper-large-v3-turbo             | 81.8x | 2772MB    | fp16, batch=24, SDPA               | 1hour.flac |
+| openai/whisper-large-v3-turbo             | 31.4x | 2772MB    | fp16, batch=None, SDPA             | 1hour.flac |
+| nvidia/canary-1b                          |       | OOM       | vanilla                            | 1hour.flac |
+| Systran/faster-whisper-large-v3           | 10.5x |           | batch=None, beam_size=1            | 1hour.flac |
+| Systran/faster-whisper-large-v3           | 51.8x |           | batch=24, beam_size=1              | 1hour.flac |
+| Systran/faster-whisper-large-v2           | 50.9x | 10GB      | batch=16, beam_size=1              | 1hour.flac |
+| Systran/faster-whisper-large-v2           | 34x   | 11GB      | batch=16, beam_size=5              | 1hour.flac |
+| Systran/faster-whisper-large-v2           |       | OOM       | batch=16, beam_size=5              | long.flac  |
+| Systran/faster-whisper-large-v2           | 53.5x | 14GB      | batch=12, beam_size=5              | long.flac  |
+| Systran/faster-whisper-large-v2           | 50.9x | 13GB      | batch=8, beam_size=5               | long.flac  |
+| Systran/faster-whisper-large-v2           | 49x   | 12GB      | batch=6, beam_size=5               | long.flac  |
+| Systran/faster-whisper-large-v2           | 49x   | ~11GB     | batch=6, beam_size=5, int8_float16 | long.flac  |
+| Systran/faster-whisper-large-v2           | 11.9x | 6.8GB     | batch=None, beam_size=5            | 1hour.flac |
+| Systran/faster-whisper-large-v2           | 18.3x | 6.8GB     | batch=None, beam_size=1            | 1hour.flac |
+| Systran/faster-distil-whisper-large-v3    | 89.4x |           | batch=24, beam_size=1              | 1hour.flac |
+| Systran/faster-distil-whisper-large-v3    | 83.7x |           | batch=24, beam_size=5              | 1hour.flac |
+| deepdml/faster-whisper-large-v3-turbo-ct2 | 21.8x | ~4700MB   | batch=None, beam_size=5            | 1hour.flac |
+| deepdml/faster-whisper-large-v3-turbo-ct2 | 76.2x | ~10237MB  | batch=24, beam_size=5              | 1hour.flac |
 
 Notes:
 

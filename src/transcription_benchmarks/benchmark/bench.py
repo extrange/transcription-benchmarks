@@ -82,6 +82,7 @@ def _run_fw_model(
     info = None
 
     if type(args.fw_args) is FasterWhisperBatchArgs:
+        _logger.info("Using faster-whisper BatchedInferencePipeline")
         segments, info = BatchedInferencePipeline(
             fw_model, chunk_length=args.chunk_length_s or 30
         ).transcribe(
@@ -89,12 +90,11 @@ def _run_fw_model(
             batch_size=args.batch_size or 16,
             **args.fw_args.model_dump(),
         )
-        _logger.info("Using faster-whisper BatchedInferencePipeline")
     else:
+        _logger.info("Using faster-whisper without batching")
         segments, info = fw_model.transcribe(
             audio=str(audio_file), **args.fw_args.model_dump()
         )
-        _logger.info("Using faster-whisper without batching")
 
     _logger.info(
         "Detected language '%s' with probability %f",

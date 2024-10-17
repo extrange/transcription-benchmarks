@@ -10,16 +10,13 @@ from typing import cast
 
 import boto3
 from sagemaker import Session
-from sagemaker.async_inference import AsyncInferenceConfig
 from sagemaker.huggingface.model import HuggingFaceModel, Predictor
 from sagemaker.local import LocalSession
-from sagemaker.predictor_async import AsyncPredictor
 from sagemaker.serializers import DataSerializer
 from sagemaker.utils import name_from_base
 
 from transcription_benchmarks.misc.setup_logging import setup_logging
 
-setup_logging()
 _logger = logging.getLogger(__name__)
 
 
@@ -45,6 +42,7 @@ def deploy_locally(
 
     TODO: Speedup by removing the repacking step
     """
+    setup_logging()
 
     # Fix issues with .pyc files in code_dir being owned by root
     _logger.info("chowning %s", code_dir)
@@ -105,7 +103,7 @@ def deploy_on_aws(  # noqa: PLR0913
     role: str = "arn:aws:iam::189606967604:role/service-role/AmazonSageMaker-ExecutionRole-20240503T161356",
     entry_point: str = "inference.py",
     bucket_name: str | None = None,
-) -> AsyncPredictor:
+) -> str:
     """
     Deploy a model with custom inference code to AWS.
 
@@ -120,16 +118,14 @@ def deploy_on_aws(  # noqa: PLR0913
     `entry_point`: Filename of the custom inference script, within `source_dir`.
 
     `bucket_name`: Name of S3 bucket where output/failure responses from the model will be saved.
+
+    Returns the name of the endpoint.
     """
+    setup_logging()
     session = Session()
     sagemaker_default_bucket = session.default_bucket()
 
-    _safe_name = name_from_base(model_and_endpoint_name.replace("/", "-"))
-
-    async_config = AsyncInferenceConfig(
-        output_path=f"s3://{bucket_name or sagemaker_default_bucket}/output/",
-        failure_path=f"s3://{bucket_name or sagemaker_default_bucket}/failure/",
-    )
+    _model_name_safe = name_from_base(model_and_endpoint_name.replace("/", "-"))
 
     # create Hugging Face Model Class
     huggingface_model = HuggingFaceModel(
@@ -140,7 +136,7 @@ def deploy_on_aws(  # noqa: PLR0913
         source_dir=source_dir,  # Seems like this directory is only checked (and used) when model_data is supplied
         entry_point=entry_point,
         role=role,
-        name=_safe_name,
+        name=_model_name_safe,
         env={  # See readme on why this is necessary.
             "MMS_MAX_REQUEST_SIZE": "2000000000",
             "MMS_MAX_RESPONSE_SIZE": "2000000000",
@@ -148,15 +144,38 @@ def deploy_on_aws(  # noqa: PLR0913
         },
     )
 
-    predictor = huggingface_model.deploy(
-        endpoint_name=_safe_name,
-        initial_instance_count=1,
-        instance_type="ml.g4dn.xlarge",
-        async_inference_config=async_config,
+    # Create the model, but don't deploy it
+    _logger.info("Creating model...")
+    huggingface_model.create(instance_type="ml.g4dn.xlarge")
+    _logger.info("Model created.")
+
+    # Upgrade the AMI image so we have CUDA 12.4
+    client = boto3.client("sagemaker")
+    client.create_endpoint_config(
+        EndpointConfigName=_model_name_safe,
+        ProductionVariants=[
+            {
+                "VariantName": "AllTraffic",
+                "ModelName": _model_name_safe,
+                "InitialInstanceCount": 1,
+                "InstanceType": "ml.g4dn.xlarge",
+                "InitialVariantWeight": 1.0,
+                "InferenceAmiVersion": "al2-ami-sagemaker-inference-gpu-2",
+            }
+        ],
+        AsyncInferenceConfig={
+            "OutputConfig": {
+                "S3OutputPath": f"s3://{bucket_name or sagemaker_default_bucket}/output/",
+                "S3FailurePath": f"s3://{bucket_name or sagemaker_default_bucket}/failure/",
+            }
+        },
+        EnableNetworkIsolation=False,
     )
-
-    if predictor is None:
-        err = "predictor is None!"
-        raise RuntimeError(err)
-
-    return predictor
+    _logger.info("Created endpoint config '%s'. Creating endpoint...", _model_name_safe)
+    client.create_endpoint(
+        EndpointName=_model_name_safe, EndpointConfigName=_model_name_safe
+    )
+    waiter = client.get_waiter("endpoint_in_service")
+    _logger.info("Waiting for endpoint '%s' to be InService...", _model_name_safe)
+    waiter.wait(EndpointName=_model_name_safe)
+    return _model_name_safe

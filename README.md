@@ -32,8 +32,11 @@ Notes:
 
 - `distil` models are all bad at multilingual speech.
 - The best performing model for noisy/multilingual environments is `openai/whisper-large-v2`, with the faster-whisper CT2 implementation performing better than the Transformers one, presumably because of many enhancements made to filter out low probability segments (I cannot replicate the exact parameters, e.g. the output of both are different even with batch_size=None and num_beams=5).
-- SDPA is only available in Pytorch 2.1.1 and above. In order to use it in the SageMaker images, the PyTorch version is overridden via `requirements.txt`. Tested in Sagemaker Local Mode.
-- faster-whisper doesn't really provide significant speedups. Consider investigating whether total memory usage is lower, however.
+- SDPA is only available in Pytorch 2.1.1 and above.
+- The SageMaker model container uses the NVIDIA GPU Driver version 470.256.02, which will only support CUDA 11.8 (regardless of the image used). CUDA 12.x requires version >= 525.60.13 ([support matrix]). Verified on both the gd4n.xlarge and g4dn.2xlarge instances.
+  - This is because the default AMI uses that driver. To get around this, use the Sagemaker Session's `create_endpoint_config` method with `InferenceAmiVersion: al2-ami-sagemaker-inference-gpu-2`. This will give you the GPU driver version 535.183.01 with CUDA Version: 12.2.
+- For faster-whisper, [CTranslate2 4.0.0 does not work with CUDA 11.8][ctranslate2]. The last version supporting CUDA 11.8 is ctranslate2==3.24.0.
+- [List of available Sagemaker Deep Learning Container images][sagemaker-dlc-images]. Make sure you use the `ap-southeast-1` region or you will get auth errors.
 
 ## Setup
 
@@ -49,12 +52,12 @@ After activating that environment, you can then run modules with `python -m your
 
 ```python
 # Benchmark
-from benchmark.bench import bench
+from transcription_benchmarks.benchmark.bench import bench
 res = bench("openai/whisper-large-v2")
 print(res.get_text())
 
 # Deploy
-from scripts.deploy import deploy_locally
+from transcription_benchmarks.util.deploy import deploy_locally
 
 predictor = deploy_locally("models/ylacombe-whisper-large-v3-turbo/model_artifact.tar.gz", "/home/ubuntu/whisper/models/code")
 
@@ -121,3 +124,6 @@ The underlying EC2 instance ran out of GPU memory.
 [mms-env-vars]: https://github.com/awslabs/multi-model-server/blob/master/docs/configuration.md
 [configmanager.java]: https://github.com/awslabs/multi-model-server/blob/master/frontend/server/src/main/java/com/amazonaws/ml/mms/util/ConfigManager.java
 [test-files]: test_audio/readme.md
+[support matrix]: https://docs.nvidia.com/deploy/cuda-compatibility/
+[ctranslate2]: https://github.com/SYSTRAN/faster-whisper/issues/734
+[sagemaker-dlc-images]: https://github.com/aws/deep-learning-containers/blob/master/available_images.md#sagemaker-framework-containers-sm-support-only

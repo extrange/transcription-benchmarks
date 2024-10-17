@@ -2,11 +2,15 @@ import base64
 import json
 import logging
 import time
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Any
 
 import boto3
 import brotli
 from faster_whisper.transcribe import Segment, TranscriptionInfo
 from sagemaker import Predictor
+from sagemaker.async_inference import WaiterConfig
 from sagemaker.huggingface.model import HuggingFacePredictor
 from sagemaker.local import LocalSession
 from sagemaker.predictor_async import AsyncPredictor
@@ -24,7 +28,7 @@ def predict_local(
     endpoint_name: str,
     test_file: AudioFilename = "10min.flac",
     params: ModelArgs | None = None,
-) -> tuple[list[Segment], TranscriptionInfo] | TranscriptionInfo:
+) -> tuple[list[Segment], TranscriptionInfo]:
     """Test a local Sagemaker endpoint."""
     sagemaker_session = LocalSession(boto3.Session(region_name="ap-southeast-1"))
     sagemaker_session.config = {"local": {"local_code": True}}
@@ -35,7 +39,19 @@ def predict_local(
         serializer=DataSerializer(content_type="audio/x-audio"),
     )
 
-    return _predict(predictor, test_file, endpoint_name, params)
+    with (
+        _log_stats(test_file, endpoint_name),
+        get_test_audio(test_file).open("rb") as f,
+    ):
+        if params:
+            response = predictor.predict(
+                data=f.read(),
+                initial_args=_compress_args(params),
+            )
+        else:
+            # For local endpoints, the result is not serialized
+            response = json.loads(predictor.predict(data=f.read()))
+        return _parse_response(response)
 
 
 def predict_aws(
@@ -44,47 +60,55 @@ def predict_aws(
     params: ModelArgs | None = None,
 ) -> tuple[list[Segment], TranscriptionInfo] | TranscriptionInfo:
     """Test a deployed AsyncEndpoint."""
-    model = AsyncPredictor(
+    predictor = AsyncPredictor(
         HuggingFacePredictor(
             endpoint_name=endpoint_name,
             serializer=DataSerializer(content_type="audio/x-audio"),
         ),
         name=endpoint_name,
     )
-    if not model:
+    if not predictor:
         raise RuntimeError
-
-    return _predict(model, test_file, endpoint_name, params)
-
-
-def _predict(
-    predictor: Predictor | AsyncPredictor,
-    test_file: AudioFilename,
-    endpoint_name: str,
-    params: ModelArgs | None = None,
-) -> tuple[list[Segment], TranscriptionInfo] | TranscriptionInfo:
-    now = time.time()
-    _logger.info("Starting prediction for file %s", test_file)
-    with get_test_audio(test_file).open("rb") as f:
+    waiter_config = WaiterConfig(max_attempts=500, delay=2)
+    with (
+        _log_stats(test_file, endpoint_name),
+        get_test_audio(test_file).open("rb") as f,
+    ):
         if params:
-            compressed = base64.b64encode(
-                brotli.compress(params.model_dump_json().encode("utf-8"))
-            )
-            response = json.loads(
-                predictor.predict(
-                    data=f.read(),
-                    initial_args={"CustomAttributes": compressed},
-                )
+            response = predictor.predict(
+                data=f.read(),
+                initial_args=_compress_args(params),
+                waiter_config=waiter_config,
             )
         else:
-            response = json.loads(predictor.predict(data=f.read()))
-    _logger.info(response)
-    _logger.info(
-        "Took %ss, %s, %s",
-        f"{time.time() - now:.1f}",
-        f"{test_file=}",
-        f"{endpoint_name=}",
-    )
-    if params and params.task == "detect_language":
-        return TranscriptionInfo(*response)
+            response = predictor.predict(data=f.read(), waiter_config=waiter_config)
+        return _parse_response(response)
+
+
+def _compress_args(params: ModelArgs) -> dict[str, str]:
+    return {
+        "CustomAttributes": base64.b64encode(
+            brotli.compress(params.model_dump_json().encode("utf-8"))
+        ).decode("utf-8")
+    }
+
+
+def _parse_response(
+    response: Any,
+) -> tuple[list[Segment], TranscriptionInfo]:
     return [Segment(*s) for s in response[0]], TranscriptionInfo(*response[1])
+
+
+@contextmanager
+def _log_stats(test_file: str, endpoint_name: str) -> Generator[None, None, None]:
+    now = time.time()
+    _logger.info("Starting prediction for file %s", test_file)
+    try:
+        yield
+    finally:
+        _logger.info(
+            "Took %ss, %s, %s",
+            f"{time.time() - now:.1f}",
+            f"{test_file=}",
+            f"{endpoint_name=}",
+        )

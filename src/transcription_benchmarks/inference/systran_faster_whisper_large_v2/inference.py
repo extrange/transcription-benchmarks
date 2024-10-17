@@ -1,26 +1,26 @@
 """
 Custom inference script run by Sagemaker's Multi Model Server.
 
-For information on overriding functions, see https://huggingface.co/docs/sagemaker/en/inference#user-defined-code-and-modules.
+For information on overriding functions, see https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#id4.
 
 Source of calling script:
-https://github.com/aws/sagemaker-huggingface-inference-toolkit/blob/main/src/sagemaker_huggingface_inference_toolkit/handler_service.py
+https://github.com/aws/sagemaker-pytorch-inference-toolkit/blob/master/src/sagemaker_inference/transformer.py
 """  # noqa: INP001
 
 import base64
 import logging
+import subprocess
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import brotli
 import torch
 from faster_whisper import BatchedInferencePipeline, WhisperModel
-from faster_whisper.transcribe import TranscriptionInfo
-from faster_whisper.vad import VadOptions
 from pydantic import BaseModel, model_validator
 
 if TYPE_CHECKING:
-    from faster_whisper.transcribe import Segment
+    from faster_whisper.transcribe import Segment, TranscriptionInfo
+    from faster_whisper.vad import VadOptions
     from mms.context import Context
 
 
@@ -65,7 +65,7 @@ class SingleArgs(BaseModel):
     multilingual: bool = False
     output_language: str | None = None
     vad_filter: bool = False
-    vad_parameters: dict | VadOptions | None = None
+    vad_parameters: Union[dict, "VadOptions", None] = None
     max_new_tokens: int | None = None
     chunk_length: int | None = None
     clip_timestamps: str | list[float] = "0"
@@ -125,7 +125,6 @@ class ModelArgs(BaseModel):
     """
 
     task: Literal["transcribe", "detect_language"] = "transcribe"
-    batch_size: int | None = None
     batch_params: BatchArgs | None = None
     single_params: SingleArgs | None = None
     """If truthy, will use BatchedInferencePipeline."""
@@ -144,25 +143,36 @@ class ModelArgs(BaseModel):
         return self
 
 
-def model_fn(model_dir: str, *_args: Any) -> "WhisperModel":
+def model_fn(model_dir: str, _context: Any) -> "WhisperModel":
     """
     Override the default method for loading a model. The return value model will be used in predict for predictions.
 
     `model_dir`:  the path to your unzipped model.tar.gz.
     """
+    logging.info(
+        "nvidia-smi:\n%s",
+        subprocess.run(  # noqa: S603
+            "/usr/bin/nvidia-smi", capture_output=True, check=True
+        ).stdout.decode("utf-8"),
+    )
+    logging.info("Pytorch version: %s", torch.__version__)
     return WhisperModel(model_dir, "cuda", compute_type="float16")
 
 
 def predict_fn(
     data: dict, model: WhisperModel, context: "Context"
-) -> "tuple[list[Segment], TranscriptionInfo] | TranscriptionInfo":
+) -> "tuple[list[Segment], TranscriptionInfo]":
     """
     Override the default method for prediction.
 
     `data`: dict with key 'inputs' containing raw bytes
     `model`: The output of `model_fn`
     `context`: mms.Context object containing custom_attributes passed in with the request. Refer to ModelArgs for passable parameters.
+
+    If the task is "detect_language", list[Segment] will be an empty list.
     """
+    torch.cuda.empty_cache()
+    logging.info("VRAM memory cache cleared.")
     _log_memory()
     audio: bytes = data["inputs"]
 
@@ -190,16 +200,18 @@ def _get_params(context: "Context") -> ModelArgs:
         "X-Amzn-SageMaker-Custom-Attributes"
     )
     if not custom_attrs:
-        return ModelArgs(task="transcribe", batch_size=None, single_params=SingleArgs())
+        return ModelArgs(task="transcribe", single_params=SingleArgs())
 
     params = brotli.decompress(base64.b64decode(custom_attrs))
     return ModelArgs.model_validate_json(params)
 
 
-def _detect_language(audio: bytes, model: WhisperModel) -> TranscriptionInfo:
+def _detect_language(
+    audio: bytes, model: WhisperModel
+) -> "tuple[list[Segment], TranscriptionInfo]":
     info = model.transcribe(audio=audio)[1]  # pyright: ignore[reportArgumentType]
     torch.cuda.empty_cache()
-    return info
+    return [], info
 
 
 def _single(
@@ -213,6 +225,9 @@ def _batch(
     audio: bytes, params: BatchArgs, model: WhisperModel
 ) -> "tuple[list[Segment], TranscriptionInfo]":
     batched_model = BatchedInferencePipeline(model)
-    segments, info = batched_model.transcribe(audio, **params.model_dump())  # pyright: ignore[reportArgumentType]
+    segments, info = batched_model.transcribe(
+        audio,  # pyright: ignore[reportArgumentType]
+        **params.model_dump(),
+    )
 
     return list(segments), info

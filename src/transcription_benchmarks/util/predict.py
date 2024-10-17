@@ -25,7 +25,6 @@ _logger = logging.getLogger(__name__)
 
 
 def predict_local(
-    endpoint_name: str,
     test_file: AudioFilename = "10min.flac",
     params: ModelArgs | None = None,
 ) -> tuple[list[Segment], TranscriptionInfo]:
@@ -34,13 +33,13 @@ def predict_local(
     sagemaker_session.config = {"local": {"local_code": True}}
 
     predictor = Predictor(
-        endpoint_name=endpoint_name,
+        endpoint_name="local",
         sagemaker_session=sagemaker_session,
         serializer=DataSerializer(content_type="audio/x-audio"),
     )
 
     with (
-        _log_stats(test_file, endpoint_name),
+        _log_stats(test_file, "local"),
         get_test_audio(test_file).open("rb") as f,
     ):
         if params:
@@ -48,17 +47,19 @@ def predict_local(
                 data=f.read(),
                 initial_args=_compress_args(params),
             )
+            _logger.info(json.loads(response))
         else:
-            # For local endpoints, the result is not serialized
-            response = json.loads(predictor.predict(data=f.read()))
-        return _parse_response(response)
+            response = predictor.predict(data=f.read())
+            _logger.info(json.loads(response))
+        # For local endpoints, the result is in bytes
+        return _parse_response(json.loads(response))
 
 
 def predict_aws(
     endpoint_name: str,
     test_file: AudioFilename = "10min.flac",
     params: ModelArgs | None = None,
-) -> tuple[list[Segment], TranscriptionInfo] | TranscriptionInfo:
+) -> tuple[list[Segment], TranscriptionInfo]:
     """Test a deployed AsyncEndpoint."""
     predictor = AsyncPredictor(
         HuggingFacePredictor(

@@ -1,3 +1,7 @@
+"""
+Tests to ensure arguments for bench are validated correctly.
+"""
+
 import logging
 
 from transcription_benchmarks.app_types.bench import (

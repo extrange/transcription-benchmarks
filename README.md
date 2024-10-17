@@ -37,6 +37,7 @@ Notes:
   - This is because the default AMI uses that driver. To get around this, use the Sagemaker Session's `create_endpoint_config` method with `InferenceAmiVersion: al2-ami-sagemaker-inference-gpu-2`. This will give you the GPU driver version 535.183.01 with CUDA Version: 12.2.
 - For faster-whisper, [CTranslate2 4.0.0 does not work with CUDA 11.8][ctranslate2]. The last version supporting CUDA 11.8 is ctranslate2==3.24.0.
 - [List of available Sagemaker Deep Learning Container images][sagemaker-dlc-images]. Make sure you use the `ap-southeast-1` region or you will get auth errors.
+- The output of faster-whisper is only deterministic if `temperature=0`. Otherwise, the default parameters use repeatedly higher temperatures when repetition is detected.
 
 ## Setup
 
@@ -50,26 +51,43 @@ After activating that environment, you can then run modules with `python -m your
 
 ## Usage
 
+Benchmark:
+
 ```python
-# Benchmark
 from transcription_benchmarks.benchmark.bench import bench
 res = bench("openai/whisper-large-v2")
 print(res.get_text())
+```
 
-# Deploy
+Deploy locally:
+
+```python
 from transcription_benchmarks.util.deploy import deploy_locally
+from transcription_benchmarks.util.predict import predict_local
 
-predictor = deploy_locally("models/ylacombe-whisper-large-v3-turbo/model_artifact.tar.gz", "/home/ubuntu/whisper/models/code")
+deploy_locally("/home/ubuntu/transcription-benchmarks/models/Systran-faster-whisper-large-v2/model_artifact.tar.gz", "/home/ubuntu/transcription-benchmarks/src/transcription_benchmarks/inference/systran_faster_whisper_large_v2")
 
-# Predict
-from scripts.predict import predict_local
+predict_local()
+```
 
-predict_local(predictor.endpoint_name, "10min.flac")
+Deploy to AWS:
+
+```python
+from transcription_benchmarks.util.deploy import deploy_on_aws
+from transcription_benchmarks.util.predict import predict_aws
+
+endpoint = deploy_on_aws("your-endpoint-name","/home/ubuntu/transcription-benchmarks/models/Systran-faster-whisper-large-v2/model_artifact.tar.gz", "/home/ubuntu/transcription-benchmarks/src/transcription_benchmarks/inference/systran_faster_whisper_large_v2")
+
+predict_aws(endpoint)
 ```
 
 ## Testing
 
 `coverage run --branch -m pytest && coverage html`
+
+To include tests for local endpoints, set the env var `LOCAL=1`.
+
+To include tests for AWS endpoints, set the env var `AWS_ENDPOINT=aws-endpoint-name`.
 
 ## Sagemake Pricing and Instances
 

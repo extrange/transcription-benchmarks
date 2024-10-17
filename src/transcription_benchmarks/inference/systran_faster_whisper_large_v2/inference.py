@@ -11,16 +11,16 @@ import base64
 import logging
 import subprocess
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 import brotli
 import torch
 from faster_whisper import BatchedInferencePipeline, WhisperModel
+from faster_whisper.transcribe import Segment, TranscriptionInfo
+from faster_whisper.vad import VadOptions
 from pydantic import BaseModel, model_validator
 
 if TYPE_CHECKING:
-    from faster_whisper.transcribe import Segment, TranscriptionInfo
-    from faster_whisper.vad import VadOptions
     from mms.context import Context
 
 
@@ -65,7 +65,7 @@ class SingleArgs(BaseModel):
     multilingual: bool = False
     output_language: str | None = None
     vad_filter: bool = False
-    vad_parameters: Union[dict, "VadOptions", None] = None
+    vad_parameters: dict | VadOptions | None = None
     max_new_tokens: int | None = None
     chunk_length: int | None = None
     clip_timestamps: str | list[float] = "0"
@@ -143,7 +143,7 @@ class ModelArgs(BaseModel):
         return self
 
 
-def model_fn(model_dir: str, _context: Any) -> "WhisperModel":
+def model_fn(model_dir: str, _context: Any) -> WhisperModel:
     """
     Override the default method for loading a model. The return value model will be used in predict for predictions.
 
@@ -161,7 +161,7 @@ def model_fn(model_dir: str, _context: Any) -> "WhisperModel":
 
 def predict_fn(
     data: dict, model: WhisperModel, context: "Context"
-) -> "tuple[list[Segment], TranscriptionInfo]":
+) -> tuple[list[Segment], TranscriptionInfo]:
     """
     Override the default method for prediction.
 
@@ -208,7 +208,7 @@ def _get_params(context: "Context") -> ModelArgs:
 
 def _detect_language(
     audio: bytes, model: WhisperModel
-) -> "tuple[list[Segment], TranscriptionInfo]":
+) -> tuple[list[Segment], TranscriptionInfo]:
     info = model.transcribe(audio=audio)[1]  # pyright: ignore[reportArgumentType]
     torch.cuda.empty_cache()
     return [], info
@@ -216,14 +216,14 @@ def _detect_language(
 
 def _single(
     audio: bytes, params: SingleArgs, model: WhisperModel
-) -> "tuple[list[Segment], TranscriptionInfo]":
+) -> tuple[list[Segment], TranscriptionInfo]:
     segments, info = model.transcribe(audio=audio, **params.model_dump())  # pyright: ignore[reportArgumentType]
     return list(segments), info
 
 
 def _batch(
     audio: bytes, params: BatchArgs, model: WhisperModel
-) -> "tuple[list[Segment], TranscriptionInfo]":
+) -> tuple[list[Segment], TranscriptionInfo]:
     batched_model = BatchedInferencePipeline(model)
     segments, info = batched_model.transcribe(
         audio,  # pyright: ignore[reportArgumentType]

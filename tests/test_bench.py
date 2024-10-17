@@ -2,10 +2,14 @@
 Tests to ensure that model output is fixed, given parameters.
 """
 
+import pytest
+
 from transcription_benchmarks.app_types.bench import BenchArgs, FasterWhisperBatchArgs
 from transcription_benchmarks.benchmark.bench import bench
+from transcription_benchmarks.util.gpu import gpu_available
 
 
+@pytest.mark.skipif(not gpu_available())
 def test_openai_whisper_large_v2() -> None:
     res = bench("openai/whisper-large-v2", BenchArgs())
     assert res is not None
@@ -17,6 +21,7 @@ def test_openai_whisper_large_v2() -> None:
     assert type(res.get_stats()) is str
 
 
+@pytest.mark.skipif(not gpu_available())
 def test_openai_whisper_large_v3_turbo() -> None:
     res = bench("openai/whisper-large-v3-turbo", BenchArgs())
     assert (
@@ -25,6 +30,7 @@ def test_openai_whisper_large_v3_turbo() -> None:
     )
 
 
+@pytest.mark.skipif(not gpu_available())
 def test_fw_whisper_large_v2() -> None:
     res = bench("Systran/faster-whisper-large-v2")
     assert (
@@ -33,6 +39,7 @@ def test_fw_whisper_large_v2() -> None:
     )
 
 
+@pytest.mark.skipif(not gpu_available())
 def test_fw_whisper_large_v2_batch() -> None:
     res = bench(
         "Systran/faster-whisper-large-v2", BenchArgs(fw_args=FasterWhisperBatchArgs())

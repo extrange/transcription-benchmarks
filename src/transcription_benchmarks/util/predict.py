@@ -8,7 +8,7 @@ from typing import Any
 
 import boto3
 import brotli
-from faster_whisper.transcribe import Segment, TranscriptionInfo
+from pydantic import TypeAdapter
 from sagemaker import Predictor
 from sagemaker.async_inference import WaiterConfig
 from sagemaker.huggingface.model import HuggingFacePredictor
@@ -18,6 +18,8 @@ from sagemaker.serializers import DataSerializer
 
 from transcription_benchmarks.inference.systran_faster_whisper_large_v2.inference import (
     ModelArgs,
+    Segment,
+    TranscriptionInfo,
 )
 from transcription_benchmarks.misc.get_test_audio import AudioFilename, get_test_audio
 
@@ -97,7 +99,8 @@ def _compress_args(params: ModelArgs) -> dict[str, str]:
 def _parse_response(
     response: Any,
 ) -> tuple[list[Segment], TranscriptionInfo]:
-    return [Segment(*s) for s in response[0]], TranscriptionInfo(*response[1])
+    ta = TypeAdapter(tuple[list[Segment], TranscriptionInfo])
+    return ta.validate_python(response)
 
 
 @contextmanager

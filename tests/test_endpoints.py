@@ -2,12 +2,13 @@ import os
 from abc import ABC, abstractmethod
 
 import pytest
-from faster_whisper.transcribe import Segment, TranscriptionInfo
 
 from transcription_benchmarks.inference.systran_faster_whisper_large_v2.inference import (
     BatchArgs,
     ModelArgs,
+    Segment,
     SingleArgs,
+    TranscriptionInfo,
 )
 from transcription_benchmarks.misc.get_test_audio import AudioFilename
 from transcription_benchmarks.util.predict import predict_aws, predict_local
@@ -86,7 +87,7 @@ class BaseTestCase(ABC):
         )
         assert (
             to_str(segments)
-            == " Yeah, so you can just put that there, very good, now that's good. Okay. 这个给你看那个,那个大厂. 大厂? I don't know. 大厂? 一直来啊,小猪,一直在弄。 现在是? 没有啦,一直在弄。 Oh, okay. Okay, we arranged for her not to worry. That was the thought of her. There's something that happened with you, that's why she kept saying that. 没事啦,没事,没事。 That's what I meant. 你爱听,看我都不信。 哦,我明白了。 没在跟你说话。 我没有说话。 没在跟你说话。 I want to look at more of your poh buak. Your poh buak. Your poh buak. No, it's just not worth the money. Got any cream for this? This one actually no cream, because this one is not a cream can solve. This one need to cut. It's actually whatever... 爱果啊? 爱果啊? Yeah, it's a cream won't drip lah. But this one would not cost any... Any what? Very serious. We need to check to see what it is. Now we don't know what it is, you see. So we're gonna have to check on that, not to worry. Okay? Thank you lah. 没问题,bye bye!"
+            == " Yeah, so you can just put that there, very good, now that's good. Okay. 这个给你看那个,那个大厂. 大厂? I don't know. 大厂? 一直来啊,小猪,一直在弄。 现在是? 没有啦,一直在弄。 Oh, okay. Okay, we arranged for her not to worry. That was the thought of her. There's something that happened with you, that's why she kept saying that. 没事啦,没事,没事。 That's what I meant to say. 你爱听,看我都不信。 哦,我明白了。 没在跟你讲话。 我没有讲话。 没在跟你讲话。 I want to look at more of your poh buak. Your poh buak. Your poh buak. No, it's just not worth the money. Got any cream for this? This one actually no cream, because this one is not a cream can solve. This one need to cut. It's actually whatever... 爱果啊? 爱果啊? Yeah, it's a cream won't drip lah. But this one would not cost any... Any what? Very serious. We need to check to see what it is. Now we don't know what it is, you see. So we're gonna have to check on that, not to worry. Okay? Thank you lah. 没问题,bye bye!"
         )
 
     def test_predicting_same_text_multiple_times_should_give_same_output(self):

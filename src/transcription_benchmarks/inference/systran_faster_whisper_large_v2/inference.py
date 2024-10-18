@@ -279,6 +279,14 @@ def predict_fn(
     raise ValueError(msg)
 
 
+def output_fn(
+    output: tuple[list[Segment], TranscriptionInfo], _accept: str, _context: Any = None
+) -> str:
+    """Override the output serialization method."""
+    ta = TypeAdapter(tuple[list[Segment], TranscriptionInfo])
+    return ta.dump_json(output).decode("utf-8")
+
+
 def _log_memory() -> None:
     free, total = torch.cuda.mem_get_info()
     logging.info("VRAM Usage: %sGiB", f"{(total - free) / (1024*1024*1024):.1f}")

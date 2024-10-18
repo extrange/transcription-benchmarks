@@ -16,12 +16,38 @@ from typing import TYPE_CHECKING, Any, Literal
 import brotli
 import torch
 from faster_whisper import BatchedInferencePipeline, WhisperModel
-from faster_whisper.transcribe import Segment, TranscriptionInfo
-from faster_whisper.vad import VadOptions
-from pydantic import BaseModel, model_validator
+from faster_whisper.transcribe import Segment as FwSegment
+from faster_whisper.transcribe import TranscriptionInfo as FwTranscriptionInfo
+from faster_whisper.transcribe import TranscriptionOptions as FwTranscriptionOptions
+from faster_whisper.transcribe import VadOptions as FwVadOptions
+from pydantic import BaseModel, TypeAdapter, model_validator
 
 if TYPE_CHECKING:
     from mms.context import Context
+
+
+class VadOptions(BaseModel):
+    """VAD options.
+
+    Attributes:
+      threshold: Speech threshold. Silero VAD outputs speech probabilities for each audio chunk,
+        probabilities ABOVE this value are considered as SPEECH. It is better to tune this
+        parameter for each dataset separately, but "lazy" 0.5 is pretty good for most datasets.
+      min_speech_duration_ms: Final speech chunks shorter min_speech_duration_ms are thrown out.
+      max_speech_duration_s: Maximum duration of speech chunks in seconds. Chunks longer
+        than max_speech_duration_s will be split at the timestamp of the last silence that
+        lasts more than 100ms (if any), to prevent aggressive cutting. Otherwise, they will be
+        split aggressively just before max_speech_duration_s.
+      min_silence_duration_ms: In the end of each speech chunk wait for min_silence_duration_ms
+        before separating it
+      speech_pad_ms: Final speech chunks are padded by speech_pad_ms each side
+    """
+
+    threshold: float = 0.5
+    min_speech_duration_ms: int = 250
+    max_speech_duration_s: float = float("inf")
+    min_silence_duration_ms: int = 2000
+    speech_pad_ms: int = 400
 
 
 class SingleArgs(BaseModel):
@@ -143,6 +169,69 @@ class ModelArgs(BaseModel):
         return self
 
 
+class Word(BaseModel):  # noqa: D101
+    start: float
+    end: float
+    word: str
+    probability: float
+
+
+class Segment(BaseModel):  # noqa: D101
+    id: int
+    seek: int
+    start: float
+    end: float
+    text: str
+    tokens: list[int]
+    avg_logprob: float
+    compression_ratio: float
+    no_speech_prob: float
+    words: list[Word] | None
+    temperature: float | None = 1.0
+
+
+# Added additional parameters for multilingual videos and fixes below
+class TranscriptionOptions(BaseModel):  # noqa: D101
+    beam_size: int
+    best_of: int
+    patience: float
+    length_penalty: float
+    repetition_penalty: float
+    no_repeat_ngram_size: int
+    log_prob_threshold: float | None
+    log_prob_low_threshold: float | None
+    no_speech_threshold: float | None
+    compression_ratio_threshold: float | None
+    condition_on_previous_text: bool
+    prompt_reset_on_temperature: float
+    temperatures: list[float]
+    initial_prompt: str | Iterable[int] | None
+    prefix: str | None
+    suppress_blank: bool
+    suppress_tokens: list[int] | None
+    without_timestamps: bool
+    max_initial_timestamp: float
+    word_timestamps: bool
+    prepend_punctuations: str
+    append_punctuations: str
+    multilingual: bool
+    output_language: str | None
+    max_new_tokens: int | None
+    clip_timestamps: str | list[float]
+    hallucination_silence_threshold: float | None
+    hotwords: str | None
+
+
+class TranscriptionInfo(BaseModel):  # noqa: D101
+    language: str
+    language_probability: float
+    duration: float
+    duration_after_vad: float
+    all_language_probs: list[tuple[str, float]] | None
+    transcription_options: TranscriptionOptions
+    vad_options: VadOptions | None
+
+
 def model_fn(model_dir: str, _context: Any) -> WhisperModel:
     """
     Override the default method for loading a model. The return value model will be used in predict for predictions.
@@ -211,23 +300,50 @@ def _detect_language(
 ) -> tuple[list[Segment], TranscriptionInfo]:
     info = model.transcribe(audio=audio)[1]  # pyright: ignore[reportArgumentType]
     torch.cuda.empty_cache()
-    return [], info
+    return [], _transcription_info_to_pydantic(info)
 
 
 def _single(
     audio: bytes, params: SingleArgs, model: WhisperModel
 ) -> tuple[list[Segment], TranscriptionInfo]:
-    segments, info = model.transcribe(audio=audio, **params.model_dump())  # pyright: ignore[reportArgumentType]
-    return list(segments), info
+    output = model.transcribe(audio=audio, **params.model_dump())  # pyright: ignore[reportArgumentType]
+    return _fw_transcribe_output_to_pydantic(output)
 
 
 def _batch(
     audio: bytes, params: BatchArgs, model: WhisperModel
 ) -> tuple[list[Segment], TranscriptionInfo]:
     batched_model = BatchedInferencePipeline(model)
-    segments, info = batched_model.transcribe(
+    output = batched_model.transcribe(
         audio,  # pyright: ignore[reportArgumentType]
         **params.model_dump(),
     )
 
-    return list(segments), info
+    return _fw_transcribe_output_to_pydantic(output)
+
+
+def _fw_transcribe_output_to_pydantic(
+    o: tuple[Iterable[FwSegment], FwTranscriptionInfo],
+) -> tuple[list[Segment], TranscriptionInfo]:
+    ta = TypeAdapter(tuple[list[Segment], TranscriptionInfo])
+    return ta.validate_python(
+        ([_segment_to_pydantic(s) for s in o[0]], _transcription_info_to_pydantic(o[1]))
+    )
+
+
+def _transcription_info_to_pydantic(info: FwTranscriptionInfo) -> TranscriptionInfo:
+    info_dict = info._asdict()
+    if isinstance(info_dict["transcription_options"], FwTranscriptionOptions):
+        info_dict["transcription_options"] = info_dict[
+            "transcription_options"
+        ]._asdict()
+    if isinstance(info_dict["vad_options"], FwVadOptions):
+        info_dict["vad_options"] = info_dict["vad_options"]._asdict()
+    return TranscriptionInfo(**info_dict)
+
+
+def _segment_to_pydantic(s: FwSegment) -> Segment:
+    s_dict = s._asdict()
+    if isinstance(s_dict["words"], list):
+        s_dict["words"] = [Word(**w._asdict()) for w in s_dict["words"]]
+    return Segment(**s_dict)

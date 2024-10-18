@@ -1,10 +1,10 @@
 """
 Custom inference script run by Sagemaker's Multi Model Server.
 
-For information on overriding functions, see https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#id4.
+For information on overriding functions, see https://huggingface.co/docs/sagemaker/en/inference#user-defined-code-and-modules.
 
 Source of calling script:
-https://github.com/aws/sagemaker-pytorch-inference-toolkit/blob/master/src/sagemaker_inference/transformer.py
+https://github.com/aws/sagemaker-huggingface-inference-toolkit/blob/main/src/sagemaker_huggingface_inference_toolkit/handler_service.py
 """  # noqa: INP001
 
 import base64

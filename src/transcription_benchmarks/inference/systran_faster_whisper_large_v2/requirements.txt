@@ -1,0 +1,4 @@
+faster-whisper @ git+https://github.com/SYSTRAN/faster-whisper.git@d57c5b40b06e59ec44240d93485a95799548af50
+pydantic==2.9.1
+brotli==1.1.0
+ctranslate2==4.4.0

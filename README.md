@@ -144,7 +144,10 @@ To include tests for AWS endpoints, set the env var `AWS_ENDPOINT=aws-endpoint-n
 
 ### Unable to load any of {libcudnn_ops.so.9.1.0, libcudnn_ops.so.9.1, libcudnn_ops.so.9, libcudnn_ops.so}
 
-You are running torch `2.*.*+cu121` and have `ctranslate>=4.5.0` installed, which is a [known incompatibility](https://github.com/SYSTRAN/faster-whisper/issues/1086). Either pin `ctranslate2==4.4.0` or use torch `2.*.*+cu124` or later.
+This is caused by CuDNN v9 missing, which is required by `ctranslate>=4.5.0`. There is a [known incompatibility](https://github.com/SYSTRAN/faster-whisper/issues/1086) between Pytorch and CTranslate2 versions.
+
+- If you are running torch `2.*.*+cu121`, either pin `ctranslate2==4.4.0` or use torch `2.*.*+cu124` or later.
+- If you are running torch `2.*.*+cu124` or later, install the CuDNN v9 library with `sudo apt install libcudnn9-cuda-12`.
 
 ### Sagemaker 'Worked Died'
 

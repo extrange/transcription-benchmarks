@@ -1,5 +1,5 @@
 [project]
-name = "whisper"
+name = "transcription-benchmarks"
 version = "0.1.0"
 description = "Testing ground for whisper on sagemaker"
 readme = "README.md"
@@ -10,17 +10,12 @@ dependencies = [
     "multi-model-server>=1.1.11",
     "python-utils",
     "sagemaker[local]>=2.232.1",
-    "torch >= 2.1.0",
-    "torchaudio >=2.1.0",
-    "torchvision >= 0.16.0",
+    "torch>=2.5.0",
+    "torchaudio>=2.5.0",
+    "torchvision>=0.20.0",
     "transformers>=4.37.0",
     "typed-ffmpeg>=2.0.0",
 ]
-
-# To install pytorch (https://github.com/astral-sh/uv/issues/7202#issuecomment-2345061375):
-# First remove all other dependencies
-# uv pip install torch --index-url https://download.pytorch.org/whl/cu124
-# uv add torch torchvision torchaudio
 
 [tool.uv]
 dev-dependencies = [

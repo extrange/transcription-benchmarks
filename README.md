@@ -30,7 +30,9 @@ All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM)
 
 ## Setup
 
-You will need a GPU (e.g. an EC2 instance with a T4 GPU like `ml.g4dn.xlarge`, $0.70/hour), with the drivers installed. Follow the instructions [here][install-cuda], as well as setting the [environment variables] especially `LD_LIBRARY_PATH`.
+You will need a GPU (e.g. an EC2 instance with a T4 GPU like `ml.g4dn.xlarge`, $0.70/hour), with the drivers installed.
+
+If you are not using the devcontainer, you need to ensure that CUDA and cuDNN are installed on your system by follow the instructions [here][install-cuda], as well as setting the [environment variables] especially `LD_LIBRARY_PATH`.
 
 Create and sync the virtual environment with `uv sync`, then activate it with `source .venv/bin/activate`.
 

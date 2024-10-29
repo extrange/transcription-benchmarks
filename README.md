@@ -32,14 +32,16 @@ All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM)
 
 You will need a GPU (e.g. an EC2 instance with a T4 GPU like `ml.g4dn.xlarge`, $0.70/hour), with the drivers installed. Follow the instructions [here][install-cuda], as well as setting the [environment variables] especially `LD_LIBRARY_PATH`.
 
-Create and sync the virtual environment with `uv sync`, then activate it with `source .vern/bin/activate`.
+Create and sync the virtual environment with `uv sync`, then activate it with `source .venv/bin/activate`.
 
 <details>
 <summary>Installing a different version of Pytorch</summary>
 
 The steps above will install the latest version of Pytorch, which is generally compatible with the latest CUDA drivers. If for some reason, you need to run an older version of Pytorch (e.g., if you are unable to upgrade your GPU drivers to support a later CUDA runtime version), follow these instructions.
 
-If you are using an EC2 instance: For the AWS AMI image [`Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04)`][ami-image], the default CUDA runtime version selected is 12.1 (set via `LD_LIBRARY_PATH`, via `/etc/profile.d/dlami.sh`). CUDA Toolkit runtime versions 12.2 and 12.3 are also pre-installed.
+Note: Pytorch ships with its own CUDA runtime API versions, which will work as long as they are [supported][CUDA compatibility] by the version of the driver.
+
+EC2 instances: For the AWS AMI image [`Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04)`][ami-image], the default CUDA runtime version selected is 12.1 (set via `LD_LIBRARY_PATH`, via `/etc/profile.d/dlami.sh`). CUDA Toolkit runtime versions 12.2 and 12.3 are also pre-installed.
 
 To install Pytorch with a specific CUDA runtime version, edit your `pyproject.toml` file. For example, to install Pytorch compiled against CUDA runtime version 12.1:
 
@@ -115,8 +117,6 @@ To include tests for AWS endpoints, set the env var `AWS_ENDPOINT=aws-endpoint-n
 
 `nvidia-smi` [does not show][nvidia-smi] does not show the CUDA runtime API version (what is commonly and confusingly referred to as 'CUDA version'). Instead, it shows the CUDA driver API of the installed driver (e.g. `535.182.01` ships with CUDA driver API `12.2` - full table [here][support matrix]).
 
-Pytorch ships with its own CUDA runtime API versions, which will work as long as they are [supported][CUDA compatibility] by the version of the driver.
-
 ### Quality Comparison
 
 - `Systran/faster-whisper-large-v3` translates medical terms better than `Systran/faster-whisper-large-v2`, however repetition is much more frequent.
@@ -150,10 +150,12 @@ The underlying EC2 instance ran out of GPU memory.
 
 ### ImportError: /home/ubuntu/transcription-benchmarks/.venv/lib/python3.12/site-packages/torch/lib/../../nvidia/cusparse/lib/libcusparse.so.12: undefined symbol: \_\_nvJitLinkComplete_12_4, version libnvJitLink.so.12
 
-You are using a Pytorch CUDA runtime version which is different from the default CUDA runtime version installed on your system. Either use the bundled Pytorch CUDA runtime by setting `LD_LIBRARY_PATH` to point to `path/to/your/venv/lib/python3.xx/site-packages/nvidia/nvjitlink`, or upgrade your system's CUDA Toolkit a version equal to or later than that of Pytorch's.
+You are using a Pytorch CUDA runtime version which is different from the default CUDA runtime version installed on your system. Either use the bundled Pytorch CUDA runtime by adding `path/to/your/venv/lib/python3.xx/site-packages/nvidia/nvjitlink` to `LD_LIBRARY_PATH`, or continue to use your system's CUDA toolkit's runtime and upgrade it to a version equal to or later than that of Pytorch's.
 
-[mms-env-vars]: https://github.com/awslabs/multi-model-server/blob/master/docs/configuration.md
-[configmanager.java]: https://github.com/awslabs/multi-model-server/blob/master/frontend/server/src/main/java/com/amazonaws/ml/mms/util/ConfigManager.java
+### Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
+
+Similar to the above, however this time cuDNN is missing on the system. You can either use those bundled with Pytorch by adding `path/to/your/venv/lib/python3.xx/site-packages/nvidia/cudnn/lib` to `LD_LIBRARY_PATH`, or install `libcudnn8` on your system.
+
 [test-files]: test_audio/readme.md
 [support matrix]: https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#id5
 [CUDA compatibility]: https://docs.nvidia.com/deploy/cuda-compatibility/index.html

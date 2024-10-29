@@ -30,8 +30,8 @@ dev-dependencies = [
 package = true
 
 [tool.uv.sources]
-faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper.git" }
 python-utils = { git = "https://github.com/extrange/python-utils" }
+faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper.git", rev = "d57c5b40b06e59ec44240d93485a95799548af50" }
 
 [tool.pyright]
 # pre-commit: make pyright use the venv

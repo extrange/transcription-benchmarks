@@ -31,7 +31,7 @@ dev-dependencies = [
 package = true
 
 [tool.uv.sources]
-faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper", rev = "2386843fd7f9734e2597b4f36ce263bbc57886ea" }
+faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper" }
 faster-whisper-types = { git = "https://github.com/nuhs-projects/faster-whisper-types" }
 python-utils = { git = "https://github.com/extrange/python-utils" }
 

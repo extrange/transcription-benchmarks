@@ -26,6 +26,9 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
+      - name: Install ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
       - name: Run tests (ignoring test_bench.py as it requires GPU)
         run: |
           echo '# Code Coverage' >> $GITHUB_STEP_SUMMARY

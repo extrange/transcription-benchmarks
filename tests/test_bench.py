@@ -1,7 +1,7 @@
 from faster_whisper_types.types import WhisperBatchOptions
 
+from transcription_benchmarks._bench import bench
 from transcription_benchmarks.app_types.bench import BenchArgs
-from transcription_benchmarks.benchmark.bench import bench
 
 
 def test_transformers() -> None:

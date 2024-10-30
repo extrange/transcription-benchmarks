@@ -5,8 +5,8 @@ Tests parameters to ensure deterministic model output.
 import pytest
 from faster_whisper_types.types import WhisperBatchOptions
 
+from transcription_benchmarks._bench import bench
 from transcription_benchmarks.app_types.bench import BenchArgs
-from transcription_benchmarks.benchmark.bench import bench
 from transcription_benchmarks.util.gpu import gpu_available
 
 

@@ -6,10 +6,10 @@ import logging
 
 from faster_whisper_types.types import WhisperBatchOptions, WhisperOptions
 
+from transcription_benchmarks._bench import _validate_args
 from transcription_benchmarks.app_types.bench import (
     BenchArgs,
 )
-from transcription_benchmarks.benchmark.bench import _validate_args
 
 
 def test_warn_on_fw_model_with_pytorch_args(caplog) -> None:

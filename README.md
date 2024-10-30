@@ -68,9 +68,14 @@ Similarly, for the CUDA 12.4 runtime, modify the index urls in `pyproject.toml` 
 ## Benchmark
 
 ```python
-from transcription_benchmarks.benchmark.bench import bench
-res = bench("openai/whisper-large-v2")
-print(res.get_text())
+from transcription_benchmarks import bench, BenchArgs
+res = bench(
+    "openai/whisper-tiny.en", BenchArgs(test_file="short.flac", device="cpu")
+)
+res.get_text(with_timestamps=True)
+# [0:00:00 -> 0:00:04]  Ladies and gentlemen, thank you for being here and for your written representations.
+# [0:00:05 -> 0:00:09]  You know what the purpose of this Select Committee is.
+)
 ```
 
 ## Testing

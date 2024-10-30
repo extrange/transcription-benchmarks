@@ -2,9 +2,9 @@ import sys
 
 import pytest
 
+from transcription_benchmarks import _bench
 from transcription_benchmarks.app_types.bench import BenchArgs, BenchResult
 from transcription_benchmarks.app_types.models import Model
-from transcription_benchmarks.benchmark import bench
 
 
 def _fake_bench(model: Model, args: BenchArgs) -> BenchResult:
@@ -30,5 +30,5 @@ def test_bench_cli(monkeypatch: pytest.MonkeyPatch) -> None:
             "Systran/faster-whisper-large-v2",
         ],
     )
-    monkeypatch.setattr(bench, "bench", _fake_bench)
-    bench._cli()
+    monkeypatch.setattr(_bench, "bench", _fake_bench)
+    _bench._cli()

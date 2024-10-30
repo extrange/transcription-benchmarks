@@ -1,5 +1,7 @@
 # Whisper in Sagemaker
 
+## **Moved to [nuhs-projects](https://github.com/nuhs-projects/transcription-benchmarks.git)**
+
 Repo for experiments on speech transcription.
 
 Refer [here][test-files] for test file descriptions.

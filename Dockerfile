@@ -1,5 +1,4 @@
-FROM nvidia/cuda:12.6.2-base-ubuntu22.04 as base
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS base
 
 # Inherited by all stages and persisted in the final image
 ENV APP_DIR=/app
@@ -20,5 +19,5 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    ffmpeg curl vim libcudnn8 && \
+    ffmpeg curl vim && \
     rm -rf /var/lib/apt/lists/*

@@ -30,9 +30,9 @@ All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM)
 
 ## Setup
 
-You will need a GPU (e.g. an EC2 instance with a T4 GPU like `ml.g4dn.xlarge`, $0.70/hour), with the drivers installed.
+You will need a GPU (e.g. an EC2 instance with a T4 GPU like `ml.g4dn.xlarge`, $0.70/hour), with the drivers installed. Installing the CUDA toolkit is unnecessary as PyTorch bundles its own CUDA runtime.
 
-If you are not using the devcontainer, you need to ensure that CUDA and cuDNN are installed on your system by follow the instructions [here][install-cuda], as well as setting the [environment variables] especially `LD_LIBRARY_PATH`.
+**Note**: Presently, `ctranslate2>=4.5.0` is not able to locate and use the CuDNN v9 libraries included with Pytorch `2.*.*+cu124`. You have to point `LD_LIBRARY_PATH` to the Pytorch CuDNN libraries at `.venv/lib/python3.12/site-packages/nvidia/cudnn/lib`, or to your system CuDNN installation. Due to this, we are using Pytorch `2.*.*+cu121` and `ctranslate2==4.4.0` until the [issue][ctranslate-issue] is resolved.
 
 Create and sync the virtual environment with `uv sync`, then activate it with `source .venv/bin/activate`.
 
@@ -42,8 +42,6 @@ Create and sync the virtual environment with `uv sync`, then activate it with `s
 The steps above will install the latest version of Pytorch, which is generally compatible with the latest CUDA drivers. If for some reason, you need to run an older version of Pytorch (e.g., if you are unable to upgrade your GPU drivers to support a later CUDA runtime version), follow these instructions.
 
 Note: Pytorch ships with its own CUDA runtime API versions, which will work as long as they are [supported][CUDA compatibility] by the version of the driver.
-
-EC2 instances: For the AWS AMI image [`Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04)`][ami-image], the default CUDA runtime version selected is 12.1 (set via `LD_LIBRARY_PATH`, via `/etc/profile.d/dlami.sh`). CUDA Toolkit runtime versions 12.2 and 12.3 are also pre-installed.
 
 To install Pytorch with a specific CUDA runtime version, edit your `pyproject.toml` file. For example, to install Pytorch compiled against CUDA runtime version 12.1:
 
@@ -142,12 +140,16 @@ To include tests for AWS endpoints, set the env var `AWS_ENDPOINT=aws-endpoint-n
 
 ## FAQ
 
-### Unable to load any of {libcudnn_ops.so.9.1.0, libcudnn_ops.so.9.1, libcudnn_ops.so.9, libcudnn_ops.so}
+### Unable to load any of {libcudnn_ops.so.9.1.0, libcudnn_ops.so.9.1, libcudnn_ops.so.9, libcudnn_ops.so} Invalid handle. Cannot load symbol cudnnCreateTensorDescriptor
 
-This is caused by CuDNN v9 missing, which is required by `ctranslate>=4.5.0`. There is a [known incompatibility](https://github.com/SYSTRAN/faster-whisper/issues/1086) between Pytorch and CTranslate2 versions.
+This is caused by `ctranslate>=4.5.0` not being able to locate the CuDNN v9 libraries. There is a [known incompatibility](https://github.com/SYSTRAN/faster-whisper/issues/1086) between Pytorch and CTranslate2 versions currently.
 
-- If you are running torch `2.*.*+cu121`, either pin `ctranslate2==4.4.0` or use torch `2.*.*+cu124` or later.
-- If you are running torch `2.*.*+cu124` or later, install the CuDNN v9 library with `sudo apt install libcudnn9-cuda-12`.
+- If you are running torch `2.*.*+cu121` pin `ctranslate2==4.4.0`.
+- If you are running torch `2.*.*+cu124` or later, follow the instructions in the [Setup section.](#setup) to point `LD_LIBRARY_PATH` to Pytorch's bundled CuDNN library.
+
+### Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
+
+Similar to the above, however this time it is caused by `ctranslate <=4.4.0` not being able to locate CuDNN v8. You can use those bundled with Pytorch `2.*.*+cu121` by adding `path/to/your/venv/lib/python3.xx/site-packages/nvidia/cudnn/lib` to `LD_LIBRARY_PATH`.
 
 ### Sagemaker 'Worked Died'
 
@@ -155,19 +157,22 @@ The underlying EC2 instance ran out of GPU memory.
 
 ### ImportError: /home/ubuntu/transcription-benchmarks/.venv/lib/python3.12/site-packages/torch/lib/../../nvidia/cusparse/lib/libcusparse.so.12: undefined symbol: \_\_nvJitLinkComplete_12_4, version libnvJitLink.so.12
 
-You are using a Pytorch CUDA runtime version which is different from the default CUDA runtime version installed on your system. Either use the bundled Pytorch CUDA runtime by adding `path/to/your/venv/lib/python3.xx/site-packages/nvidia/nvjitlink` to `LD_LIBRARY_PATH`, or continue to use your system's CUDA toolkit's runtime and upgrade it to a version equal to or later than that of Pytorch's.
+Pytorch is not using its bundled version of the CUDA Runtime libraries, and is instead using those on your system, which are incompatible.
 
-### Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
+Either [uninstall CuDNN and CUDA], or unset the environment variable `LD_LIBRARY_PATH` and ensure that scripts setting it in e.g. `~/.bashrc` or `/etc/profile.d` are removed.
 
-Similar to the above, however this time cuDNN is missing on the system. You can either use those bundled with Pytorch by adding `path/to/your/venv/lib/python3.xx/site-packages/nvidia/cudnn/lib` to `LD_LIBRARY_PATH`, or install `libcudnn8` on your system.
+### RuntimeError: cuDNN error: CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH
+
+PyTorch is using your system's CuDNN library and not its bundled one. Confirm this with `ldconfig -p | grep libcudnn`.
+
+Either point `LD_LIBRARY_PATH` to PyTorch's bundled version, or [uninstall CuDNN and CUDA] from your system.
 
 [test-files]: test_audio/readme.md
 [support matrix]: https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#id5
 [CUDA compatibility]: https://docs.nvidia.com/deploy/cuda-compatibility/index.html
 [sagemaker-image]: https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ProductionVariant.html#sagemaker-Type-ProductionVariant-InferenceAmiVersion
 [nvidia-smi]: https://stackoverflow.com/questions/53422407/different-cuda-versions-shown-by-nvcc-and-nvidia-smi#comment93719643_53422407
-[ami-image]: https://aws.amazon.com/releasenotes/aws-deep-learning-base-gpu-ami-ubuntu-22-04/
 [sagemaker-pricing]: https://aws.amazon.com/sagemaker/pricing/
 [Speed comparison]: https://www.domainelibre.com/comparing-the-performance-and-cost-of-a100-v100-t4-gpus-and-tpu-in-google-colab/
-[install-cuda]: https://developer.nvidia.com/cuda-downloads
-[environment variables]: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#environment-setup
+[ctranslate-issue]: https://github.com/OpenNMT/CTranslate2/issues/1806
+[uninstall CuDNN and CUDA]: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit

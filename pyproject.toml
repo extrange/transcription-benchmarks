@@ -10,9 +10,9 @@ dependencies = [
     "multi-model-server>=1.1.11",
     "python-utils",
     "sagemaker[local]>=2.232.1",
-    "torch>=2.5.0",
-    "torchaudio>=2.5.0",
-    "torchvision>=0.20.0",
+    "torch>=2.5.1",
+    "torchaudio>=2.5.1",
+    "torchvision>=0.20.1",
     "transformers>=4.37.0",
     "typed-ffmpeg>=2.0.0",
 ]

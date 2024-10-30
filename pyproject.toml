@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "brotli>=1.1.0",
+    "faster-whisper-types",
     "faster-whisper>=1.0.3",
     "multi-model-server>=1.1.11",
     "python-utils",
@@ -30,8 +31,9 @@ dev-dependencies = [
 package = true
 
 [tool.uv.sources]
+faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper", rev = "2386843fd7f9734e2597b4f36ce263bbc57886ea" }
+faster-whisper-types = { git = "https://github.com/nuhs-projects/faster-whisper-types" }
 python-utils = { git = "https://github.com/extrange/python-utils" }
-faster-whisper = { git = "https://github.com/SYSTRAN/faster-whisper.git", rev = "d57c5b40b06e59ec44240d93485a95799548af50" }
 
 [tool.pyright]
 # pre-commit: make pyright use the venv

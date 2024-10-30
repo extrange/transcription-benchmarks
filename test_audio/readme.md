@@ -15,5 +15,6 @@
 [mixed2.flac](./mixed2.flac): Mixed English/Chinese medical consult.
 [music.flac](./music.flac): Musical song (Golden Age by Max Coveri). Hallucination tests (toward the end of the song).
 [noisy.flac](./noisy.flac): Noisy clinic consultation, multilingual.
+[problematic.flac](./problematic.flac): File which causes a crash on the Sagemaker deployment (with `torch==2.5.0+cu124`)
 
 [scdf-video]: https://www.youtube.com/watch?v=tVBFPE1ifLQ

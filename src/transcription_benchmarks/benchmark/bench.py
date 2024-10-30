@@ -4,13 +4,12 @@ from pathlib import Path
 
 import torch
 from faster_whisper import BatchedInferencePipeline, WhisperModel
+from faster_whisper_types.types import WhisperBatchOptions, WhisperOptions
 from transformers import pipeline
 
 from transcription_benchmarks.app_types.bench import (
     BenchArgs,
     BenchResult,
-    FasterWhisperArgs,
-    FasterWhisperBatchArgs,
     Segment,
 )
 from transcription_benchmarks.app_types.models import (
@@ -61,7 +60,7 @@ def _validate_args(model: Model, args: BenchArgs) -> None:
             args.hf_generate_kwargs,
         )
     # User modified the default fw_args parameter
-    elif is_pytorch_model(model) and (args.fw_args != FasterWhisperArgs()):
+    elif is_pytorch_model(model) and (args.fw_args != WhisperOptions()):
         _logger.warning(
             "You have supplied a pytorch model %s but also specified faster-whisper model arguments which will be ignored: %s",
             model,
@@ -81,13 +80,10 @@ def _run_fw_model(
     segments = None
     info = None
 
-    if type(args.fw_args) is FasterWhisperBatchArgs:
+    if type(args.fw_args) is WhisperBatchOptions:
         _logger.info("Using faster-whisper BatchedInferencePipeline")
-        segments, info = BatchedInferencePipeline(
-            fw_model, chunk_length=args.chunk_length_s or 30
-        ).transcribe(
+        segments, info = BatchedInferencePipeline(fw_model).transcribe(
             audio=str(audio_file),
-            batch_size=args.batch_size or 16,
             **args.fw_args.model_dump(),
         )
     else:
@@ -145,8 +141,8 @@ def _run_transformers(
     now = time.time()
     res = pipe(
         str(audio_file),
-        chunk_length_s=args.chunk_length_s,
-        batch_size=args.batch_size,
+        chunk_length_s=args.hf_chunk_length_s,
+        batch_size=args.hf_batch_size,
         return_timestamps=True,
         generate_kwargs=args.hf_generate_kwargs,
     )

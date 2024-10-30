@@ -1,5 +1,7 @@
 # Whisper in Sagemaker
 
+Repo for experiments on speech transcription.
+
 Refer [here][test-files] for test file descriptions.
 
 All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM).
@@ -32,7 +34,7 @@ All tests done on a `g4dn.xlarge` EC2 instance (16GB RAM, T4 GPU with 16GM VRAM)
 
 You will need a GPU (e.g. an EC2 instance with a T4 GPU like `ml.g4dn.xlarge`, $0.70/hour), with the drivers installed. Installing the CUDA toolkit is unnecessary as PyTorch bundles its own CUDA runtime.
 
-**Note**: Presently, `ctranslate2>=4.5.0` is not able to locate and use the CuDNN v9 libraries included with Pytorch `2.*.*+cu124`. You have to point `LD_LIBRARY_PATH` to the Pytorch CuDNN libraries at `.venv/lib/python3.12/site-packages/nvidia/cudnn/lib`, or to your system CuDNN installation. Due to this, we are using Pytorch `2.*.*+cu121` and `ctranslate2==4.4.0` until the [issue][ctranslate-issue] is resolved.
+**Note**: Presently, `ctranslate2>=4.5.0` is [not able][ctranslate-issue] to locate and use the CuDNN v9 libraries included with Pytorch `2.*.*+cu124`. You have to point `LD_LIBRARY_PATH` to the Pytorch CuDNN libraries at `.venv/lib/python3.12/site-packages/nvidia/cudnn/lib`, or to your system CuDNN installation.
 
 Create and sync the virtual environment with `uv sync`, then activate it with `source .venv/bin/activate`.
 
@@ -59,7 +61,7 @@ torchaudio = { index = "pytorch-cu121" }
 
 Then run `uv add torch==2.5.1+cu121 torchvision torchaudio`. The correct versions of `torchvision` and `torchaudio` will be installed automatically.
 
-Similarly, for the CUDA 12.4 runtime. Modify the index urls in `pyproject.toml` accordingly and then run `uv add torch==2.5.1+cu124 torchvision torchaudio`.
+Similarly, for the CUDA 12.4 runtime, modify the index urls in `pyproject.toml` accordingly and then run `uv add torch==2.5.1+cu124 torchvision torchaudio`.
 
 </details>
 
@@ -71,45 +73,9 @@ res = bench("openai/whisper-large-v2")
 print(res.get_text())
 ```
 
-## Deployment
-
-### Deploy Locally
-
-Edit `compose.yaml` with the appropriate volume mounts to your code directory, then run `predict_local`:
-
-```python
-from transcription_benchmarks.util.predict import predict_local
-
-predict_local()
-```
-
-### Deploy to AWS
-
-```python
-from transcription_benchmarks.util.deploy import deploy_on_aws
-from transcription_benchmarks.util.predict import predict_aws
-
-endpoint = deploy_on_aws("your-endpoint-name","/home/ubuntu/transcription-benchmarks/models/Systran-faster-whisper-large-v2/model_artifact.tar.gz", "/home/ubuntu/transcription-benchmarks/src/transcription_benchmarks/inference/systran_faster_whisper_large_v2")
-
-predict_aws(endpoint)
-```
-
-<details>
-<summary>Note on CUDA runtime versions in Sagemaker</summary>
-
-The SageMaker model container uses the NVIDIA GPU Driver version 470.256.02 by default, which will only support CUDA runtime versions up to 11.x. CUDA runtime 12.x requires GPU driver version >= 525.60.13 ([support matrix], see also [CUDA compatibility]).
-
-To use a later GPU driver version, override the Sagemaker Session's `create_endpoint_config` method with `InferenceAmiVersion: al2-ami-sagemaker-inference-gpu-2`. This provides the more recent [GPU driver version 535.183.01][sagemaker-image] which supports CUDA runtime versions 12.x.
-
-</details>
-
 ## Testing
 
 `coverage run --branch -m pytest && coverage html`
-
-To include tests for local endpoints, set the env var `LOCAL=1`.
-
-To include tests for AWS endpoints, set the env var `AWS_ENDPOINT=aws-endpoint-name`.
 
 ## Notes
 
@@ -125,19 +91,6 @@ To include tests for AWS endpoints, set the env var `AWS_ENDPOINT=aws-endpoint-n
 - The best performing model for noisy/multilingual environments is `Systran/faster-whisper-large/v2`, presumably because of many enhancements by faster-whisper made to filter out low probability segments (I cannot replicate the exact parameters, e.g. the output of both are different even with batch_size=None and num_beams=5).
 - The output of faster-whisper is only deterministic if `temperature=0`. Otherwise, the default parameters use repeatedly higher temperatures when repetition is detected.
 
-### Sagemaker Instance Comparisons
-
-[Link][sagemaker-pricing]
-
-- p2: Nvidia K80, 12GB VRAM/GPU
-- p3: Nvidia V100, 16GB VRAM/GPU
-- p4: Nvidia A100, 40GB VRAM/GPU
-- g4dn: Nvidia T4, 16GB VRAM/GPU
-- g5/g5n: Nvidia A10G, 24GB VRAM/GPU
-- g6: Nvidia L4, 16GB VRAM/GPU
-
-[Speed comparison]\: A100 > V100 > A10G > L4 > T4 > K80
-
 ## FAQ
 
 ### Unable to load any of {libcudnn_ops.so.9.1.0, libcudnn_ops.so.9.1, libcudnn_ops.so.9, libcudnn_ops.so} Invalid handle. Cannot load symbol cudnnCreateTensorDescriptor
@@ -150,10 +103,6 @@ This is caused by `ctranslate>=4.5.0` not being able to locate the CuDNN v9 libr
 ### Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
 
 Similar to the above, however this time it is caused by `ctranslate <=4.4.0` not being able to locate CuDNN v8. You can use those bundled with Pytorch `2.*.*+cu121` by adding `path/to/your/venv/lib/python3.xx/site-packages/nvidia/cudnn/lib` to `LD_LIBRARY_PATH`.
-
-### Sagemaker 'Worked Died'
-
-The underlying EC2 instance ran out of GPU memory.
 
 ### ImportError: /home/ubuntu/transcription-benchmarks/.venv/lib/python3.12/site-packages/torch/lib/../../nvidia/cusparse/lib/libcusparse.so.12: undefined symbol: \_\_nvJitLinkComplete_12_4, version libnvJitLink.so.12
 
@@ -170,9 +119,6 @@ Either point `LD_LIBRARY_PATH` to PyTorch's bundled version, or [uninstall CuDNN
 [test-files]: test_audio/readme.md
 [support matrix]: https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#id5
 [CUDA compatibility]: https://docs.nvidia.com/deploy/cuda-compatibility/index.html
-[sagemaker-image]: https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ProductionVariant.html#sagemaker-Type-ProductionVariant-InferenceAmiVersion
 [nvidia-smi]: https://stackoverflow.com/questions/53422407/different-cuda-versions-shown-by-nvcc-and-nvidia-smi#comment93719643_53422407
-[sagemaker-pricing]: https://aws.amazon.com/sagemaker/pricing/
-[Speed comparison]: https://www.domainelibre.com/comparing-the-performance-and-cost-of-a100-v100-t4-gpus-and-tpu-in-google-colab/
 [ctranslate-issue]: https://github.com/OpenNMT/CTranslate2/issues/1806
 [uninstall CuDNN and CUDA]: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit

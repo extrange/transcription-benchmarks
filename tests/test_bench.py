@@ -3,8 +3,9 @@ Tests to ensure that model output is fixed, given parameters.
 """
 
 import pytest
+from faster_whisper_types.types import WhisperBatchOptions
 
-from transcription_benchmarks.app_types.bench import BenchArgs, FasterWhisperBatchArgs
+from transcription_benchmarks.app_types.bench import BenchArgs
 from transcription_benchmarks.benchmark.bench import bench
 from transcription_benchmarks.util.gpu import gpu_available
 
@@ -38,9 +39,9 @@ class TestBench:
     def test_fw_whisper_large_v2_batch(self) -> None:
         res = bench(
             "Systran/faster-whisper-large-v2",
-            BenchArgs(fw_args=FasterWhisperBatchArgs()),
+            BenchArgs(fw_args=WhisperBatchOptions(chunk_length=30)),
         )
         assert (
             res.get_text()
-            == "[0:00:00 -> 0:00:28]  Ladies and gentlemen, thank you for being here and for your written representations. You know what the purpose of this select committee is. We are exploring the risks, the ways in which deliberate online falsehoods are spread, and we are primarily restricting ourselves to deliberate online falsehoods. We call them DOFs. And what we should do about the situation.\n[0:00:30 -> 0:00:59]  So I think it's useful to be clear about the approach we are going to take in these discussions. We see you, the entire panel, as people who enable communications, and technology enables communications. It has brought immense benefits. It has revolutionized societies. It has given more freedom to people. And at the same time, there are some issues. And we see you as partners in trying to deal with those issues."
+            == "[0:00:00 -> 0:00:29]  Ladies and gentlemen, thank you for being here and for your written representations. You know what the purpose of this select committee is. We are exploring the risks, the ways in which deliberate online falsehoods are spread, and we are primarily restricting ourselves to deliberate online falsehoods. We call them DOFs. And what we should do about the situation.\n[0:00:30 -> 0:00:59]  So I think it's useful to be clear about the approach we are going to take in these discussions. We see you, the entire panel, as people who enable communications and technology enables communications. It has brought immense benefits. It has revolutionized societies. It has given more freedom to people. And at the same time, there are some issues. And we see you as partners in trying to deal with those issues."
         )

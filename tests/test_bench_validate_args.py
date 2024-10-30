@@ -4,10 +4,10 @@ Tests to ensure arguments for bench are validated correctly.
 
 import logging
 
+from faster_whisper_types.types import WhisperBatchOptions, WhisperOptions
+
 from transcription_benchmarks.app_types.bench import (
     BenchArgs,
-    FasterWhisperArgs,
-    FasterWhisperBatchArgs,
 )
 from transcription_benchmarks.benchmark.bench import _validate_args
 
@@ -30,7 +30,7 @@ def test_no_warn_on_pytorch_model_with_fw_default_args(caplog) -> None:
     caplog.set_level(logging.WARNING)
     _validate_args(
         "openai/whisper-large-v2",
-        BenchArgs(fw_args=FasterWhisperArgs(language=None, beam_size=5)),
+        BenchArgs(fw_args=WhisperOptions(language=None, beam_size=5)),
     )
     assert len(caplog.get_records("call")) == 0
 
@@ -40,7 +40,7 @@ def test_no_warn_on_pytorch_model_with_fw_batch_default_args(caplog) -> None:
     caplog.set_level(logging.WARNING)
     _validate_args(
         "openai/whisper-large-v2",
-        BenchArgs(fw_args=FasterWhisperBatchArgs()),
+        BenchArgs(fw_args=WhisperBatchOptions()),
     )
     assert (
         caplog.get_records("call")[0].message
@@ -52,7 +52,7 @@ def test_warn_on_pytorch_model_with_fw_args(caplog) -> None:
     """If we give FW args to a pytorch model, we get a warning, containing the FW arguments passed."""
     caplog.set_level(logging.WARNING)
     _validate_args(
-        "openai/whisper-large-v2", BenchArgs(fw_args=FasterWhisperArgs(language="zh"))
+        "openai/whisper-large-v2", BenchArgs(fw_args=WhisperOptions(language="zh"))
     )
     assert (
         caplog.get_records("call")[0].message
@@ -65,7 +65,7 @@ def test_warn_on_pytorch_model_with_fw_batch_args(caplog) -> None:
     caplog.set_level(logging.WARNING)
     _validate_args(
         "openai/whisper-large-v2",
-        BenchArgs(fw_args=FasterWhisperBatchArgs(language="zh")),
+        BenchArgs(fw_args=WhisperBatchOptions(language="zh")),
     )
     assert (
         caplog.get_records("call")[0].message

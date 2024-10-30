@@ -18,6 +18,7 @@ AudioFilename = Literal[
     "hokkien.flac",
     "mixed2.flac",
     "burmese.flac",
+    "problematic.flac",
 ]
 """Refer to the readme.md in `test_audio` for descriptions."""
 

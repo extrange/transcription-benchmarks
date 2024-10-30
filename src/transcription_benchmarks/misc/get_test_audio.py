@@ -6,6 +6,7 @@ import ffmpeg
 _TEST_AUDIO_DIR = Path("test_audio")
 
 AudioFilename = Literal[
+    "short.flac",
     "1min.flac",
     "10min.flac",
     "1hour.flac",

@@ -4,13 +4,16 @@ from typing import Literal, TypeGuard, get_args
 PytorchModel = Literal[
     "distil-whisper/distil-large-v3",
     "distil-whisper/distil-large-v2",
+    "openai/whisper-tiny.en",
     "openai/whisper-large-v2",
     "openai/whisper-large-v3",
     "openai/whisper-large-v3-turbo",
 ]
 
 FasterWhisperModel = Literal[
+    "Systran/faster-whisper-tiny.en",
     "deepdml/faster-whisper-large-v3-turbo-ct2",
+    "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
     "Systran/faster-whisper-large-v3",
     "Systran/faster-whisper-large-v2",
 ]

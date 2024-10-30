@@ -21,7 +21,15 @@ def test_warn_on_fw_model_with_pytorch_args(caplog) -> None:
     )
     assert (
         caplog.get_records("call")[0].message
-        == "You have supplied a faster-whisper model deepdml/faster-whisper-large-v3-turbo-ct2 but also specified PyTorch model arguments which will be ignored: {'attn_implementation': 'sdpa'}, {}"
+        == "You have supplied a faster-whisper model deepdml/faster-whisper-large-v3-turbo-ct2 but also specified PyTorch model arguments which will be ignored: args.hf_model_kwargs={'attn_implementation': 'sdpa'}, args.hf_generate_kwargs={}, args.hf_batch_size=None, args.hf_chunk_length_s=None"
+    )
+    _validate_args(
+        "deepdml/faster-whisper-large-v3-turbo-ct2",
+        BenchArgs(hf_batch_size=30),
+    )
+    assert (
+        caplog.get_records("call")[1].message
+        == "You have supplied a faster-whisper model deepdml/faster-whisper-large-v3-turbo-ct2 but also specified PyTorch model arguments which will be ignored: args.hf_model_kwargs={}, args.hf_generate_kwargs={}, args.hf_batch_size=30, args.hf_chunk_length_s=None"
     )
 
 

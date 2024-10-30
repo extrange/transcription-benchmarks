@@ -1,5 +1,6 @@
 # Sample Audio Files
 
+[short.flac](./short.flac): Short audio sample for CI/CD on runners without GPU.
 [1min.flac](./1min.flac): High quality, multi-speaker dialogue.
 [burmese.flac](./burmese.flac): A Youtube [video][scdf-video] with Burmese and slang English in noisy backgrounds.
 

@@ -52,12 +52,19 @@ def bench(model: Model, args: BenchArgs | None = None) -> BenchResult:
 
 
 def _validate_args(model: Model, args: BenchArgs) -> None:
-    if is_fw_model(model) and (args.hf_generate_kwargs or args.hf_model_kwargs):
+    if is_fw_model(model) and (
+        args.hf_generate_kwargs
+        or args.hf_model_kwargs
+        or args.hf_batch_size
+        or args.hf_chunk_length_s
+    ):
         _logger.warning(
-            "You have supplied a faster-whisper model %s but also specified PyTorch model arguments which will be ignored: %s, %s",
+            "You have supplied a faster-whisper model %s but also specified PyTorch model arguments which will be ignored: %s, %s, %s, %s",
             model,
-            args.hf_model_kwargs,
-            args.hf_generate_kwargs,
+            f"{args.hf_model_kwargs=}",
+            f"{args.hf_generate_kwargs=}",
+            f"{args.hf_batch_size=}",
+            f"{args.hf_chunk_length_s=}",
         )
     # User modified the default fw_args parameter
     elif is_pytorch_model(model) and (args.fw_args != WhisperOptions()):
@@ -75,7 +82,11 @@ def _run_fw_model(
     audio_file: Path,
     audio_duration: float,
 ) -> BenchResult:
-    fw_model = WhisperModel(str(model_dir), device="cuda", compute_type="float16")
+    fw_model = WhisperModel(
+        str(model_dir),
+        device=args.device,
+        compute_type="float16" if args.device == "gpu" else "default",
+    )
 
     segments = None
     info = None
@@ -133,7 +144,7 @@ def _run_transformers(
         "automatic-speech-recognition",
         model=str(model_dir),
         torch_dtype=torch.float16,
-        device="cuda:0",
+        device="cuda:0" if args.device == "cuda" else -1,
         model_kwargs=args.hf_model_kwargs,  # pyright:ignore[reportArgumentType]
     )
 

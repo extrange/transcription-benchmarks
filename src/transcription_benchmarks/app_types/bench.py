@@ -40,9 +40,10 @@ class _HfGenerateKwargs(TypedDict):
 class BenchArgs(BaseModel):
     """Parameters for benchmarks."""
 
+    device: Literal["cpu", "cuda"] = "cuda"
     test_file: AudioFilename = "1min.flac"
-    hf_batch_size: int | None = 24
-    hf_chunk_length_s: int | None = 30
+    hf_batch_size: int | None = None
+    hf_chunk_length_s: int | None = None
     hf_model_kwargs: _HfModelKwargs | dict[str, Any] = {}
     """
     Dict of parameters passed to [PreTrainedModel.from_pretrained](https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained).
